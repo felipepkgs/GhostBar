@@ -9,7 +9,9 @@ final class OverlayPanelController: NSObject {
     private let minInterval: TimeInterval = 1.0 / 60.0 // caps evaluateJavaScript rate
 
     // Hotkey toggle "pins" the panel open, overriding the idle auto-hide below.
-    private var isPinned = false
+    // private(set), not fully private — AppDelegate's menu checkmark needs
+    // to read whether the panel is currently pinned open.
+    private(set) var isPinned = false
     private var hideWorkItem: DispatchWorkItem?
     // Read live from Settings (Preferences) rather than cached at init, so a
     // change takes effect on the very next touch/action without a relaunch.

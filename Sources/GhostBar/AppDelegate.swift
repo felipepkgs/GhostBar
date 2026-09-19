@@ -1,7 +1,8 @@
 import AppKit
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
+    private var toggleItem: NSMenuItem!
     private var loginItem: NSMenuItem!
     private var updateMenuItem: NSMenuItem!
     private var pendingUpdate: UpdateChecker.Release?
@@ -74,8 +75,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
+        menu.delegate = self
 
-        let toggleItem = NSMenuItem(title: "Toggle Overlay (⌃⌥⌘T)", action: #selector(toggleOverlay), keyEquivalent: "")
+        toggleItem = NSMenuItem(title: "Toggle Overlay", action: #selector(toggleOverlay), keyEquivalent: "")
         toggleItem.target = self
         menu.addItem(toggleItem)
 
@@ -124,6 +126,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.toggle()
     }
 
+    /// Keeps the toggle item's hotkey label current (it's rebindable via
+    /// Preferences now) and its checkmark reflecting whether the panel is
+    /// actually pinned open right now — refreshed on open rather than kept
+    /// live, since a menu that's closed doesn't need to track state at all.
+    func menuWillOpen(_ menu: NSMenu) {
+        toggleItem.title = "Toggle Overlay (\(HotkeyManager.currentDescription))"
+        toggleItem.state = overlay.isPinned ? .on : .off
+    }
+
     @objc private func showPreferences() {
         if preferencesWindow == nil {
             preferencesWindow = SwiftUIWindowController(
@@ -137,11 +148,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showOnboardingIfNeeded() {
         guard !Settings.hasOnboarded else { return }
+        // hasOnboarded is set from onClose, not from the "Get Started"
+        // button's action — both paths (clicking the button, which just
+        // closes the window, or closing it any other way: the red traffic
+        // light, ⌘W) funnel through the same NSWindow close, so either one
+        // marks it complete. Previously only the button did, so closing the
+        // window any other way meant Welcome popped up again on every
+        // future launch forever.
         let controller = SwiftUIWindowController(
             title: "Welcome",
             content: OnboardingView { [weak self] in
-                Settings.hasOnboarded = true
                 self?.onboardingWindow?.close()
+            },
+            onClose: { [weak self] in
+                Settings.hasOnboarded = true
                 self?.onboardingWindow = nil
             }
         )
