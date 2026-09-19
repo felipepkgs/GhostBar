@@ -21,7 +21,10 @@ final class OverlayPanelController: NSObject {
     private let stripReader = ControlStripReader()
 
     override init() {
-        let barSize = NSRect(x: 0, y: 0, width: 680, height: 118)
+        // Sized for one row (only one is ever shown now — see setMode in
+        // app.js) plus #stack's padding; was 118 back when both rows
+        // stacked visibly at once.
+        let barSize = NSRect(x: 0, y: 0, width: 680, height: 82)
 
         // A real NSVisualEffectView gives the panel genuine macOS frosted
         // glass reading the desktop behind it — CSS backdrop-filter alone
