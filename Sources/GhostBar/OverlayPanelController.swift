@@ -64,6 +64,10 @@ final class OverlayPanelController: NSObject {
             self, selector: #selector(panelDidMove),
             name: NSWindow.didMoveNotification, object: panel
         )
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(frontmostAppChanged),
+            name: NSWorkspace.didActivateApplicationNotification, object: nil
+        )
 
         loadOverlay()
         positionPanel()
@@ -76,6 +80,16 @@ final class OverlayPanelController: NSObject {
         UserDefaults.standard.set(
             "\(origin.x),\(origin.y)", forKey: Self.originDefaultsKey
         )
+    }
+
+    /// Without this, switching apps while the panel is already visible (or
+    /// mid idle-hide countdown — still `isVisible` until it fully fades)
+    /// left the stale mode/layout on screen until the panel closed and
+    /// reopened. refreshLiveLayout is also called in fadeIn(), so this only
+    /// needs to cover the "already showing" case.
+    @objc private func frontmostAppChanged() {
+        guard panel.isVisible else { return }
+        refreshLiveLayout()
     }
 
     private func loadOverlay() {
