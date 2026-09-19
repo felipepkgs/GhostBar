@@ -18,6 +18,22 @@ final class OverlayPanelController: NSObject {
 
     private static let originDefaultsKey = "GhostBar.panelOrigin"
 
+    // NSWindow.didMoveNotification fires for both a real user drag AND our
+    // own positionPanel() calling setFrameOrigin — without this flag,
+    // positionPanel()'s very first auto-placement got immediately saved as
+    // if the user had dragged it there, and every subsequent call took the
+    // "saved position" early-return path forever, freezing the panel on
+    // whatever screen it first happened to appear on (cursorScreen()/
+    // builtInScreen() never ran again after that).
+    private var isRepositioningProgrammatically = false
+
+    // The screen positionPanel() last placed the panel on — compared against
+    // the cursor's current screen on every touch tick so the panel follows
+    // live as you move to another monitor, instead of only re-resolving at
+    // the start of a new gesture (which meant lifting your finger and
+    // waiting for a fade before a screen change took effect).
+    private var currentScreen: NSScreen?
+
     private let stripReader = ControlStripReader()
 
     override init() {
@@ -78,11 +94,20 @@ final class OverlayPanelController: NSObject {
 
     /// Remembers a manually dragged position across launches; otherwise
     /// centers low on the main screen, roughly under the physical Touch Bar.
+    /// Ignores moves positionPanel() made itself — see
+    /// isRepositioningProgrammatically's comment.
     @objc private func panelDidMove() {
+        guard !isRepositioningProgrammatically else { return }
         let origin = panel.frame.origin
         UserDefaults.standard.set(
             "\(origin.x),\(origin.y)", forKey: Self.originDefaultsKey
         )
+    }
+
+    private func setPanelOrigin(_ origin: NSPoint) {
+        isRepositioningProgrammatically = true
+        panel.setFrameOrigin(origin)
+        isRepositioningProgrammatically = false
     }
 
     /// Without this, switching apps while the panel is already visible (or
@@ -103,34 +128,41 @@ final class OverlayPanelController: NSObject {
         webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
     }
 
+    /// Always resolves the screen fresh (cursor's screen wins, falling back
+    /// to the built-in display then NSScreen.main) — the panel is glued to
+    /// wherever the user is actually looking, not pinned to whichever screen
+    /// it first happened to appear on. A manually dragged position is only
+    /// honored when it lands on THAT resolved screen, so dragging on one
+    /// monitor can't freeze the panel there once the cursor moves to another.
     private func positionPanel() {
+        guard let screen = cursorScreen() ?? builtInScreen() ?? NSScreen.main else { return }
+        currentScreen = screen
+
         if let saved = UserDefaults.standard.string(forKey: Self.originDefaultsKey) {
             let parts = saved.split(separator: ",").compactMap { Double($0) }
             if parts.count == 2 {
                 let origin = NSPoint(x: parts[0], y: parts[1])
                 let candidate = NSRect(origin: origin, size: panel.frame.size)
-                // Checked against every connected screen, not just the
-                // built-in one below — a saved drag position should still
-                // be honored wherever it currently lands.
-                if NSScreen.screens.contains(where: { $0.frame.intersects(candidate) }) {
-                    panel.setFrameOrigin(origin)
+                if screen.frame.intersects(candidate) {
+                    setPanelOrigin(origin)
                     return
                 }
             }
         }
 
-        // Default placement follows wherever the user is actually looking —
-        // the screen under the cursor — rather than always the built-in
-        // display: with an external monitor in use, that's usually not
-        // where attention is, even though the physical Touch Bar itself is
-        // always on the built-in screen regardless. Falls back to the
-        // built-in screen (then whatever NSScreen.main is) if the cursor
-        // can't be resolved to any connected screen.
-        guard let screen = cursorScreen() ?? builtInScreen() ?? NSScreen.main else { return }
         let frame = screen.visibleFrame
         let x = frame.midX - panel.frame.width / 2
         let y = frame.minY + 60
-        panel.setFrameOrigin(NSPoint(x: x, y: y))
+        setPanelOrigin(NSPoint(x: x, y: y))
+    }
+
+    /// Re-resolves the cursor's screen and repositions only if it actually
+    /// differs from where the panel currently sits — called on every touch
+    /// tick so the panel tracks the cursor live, without doing the full
+    /// UserDefaults/screen-matching work on every single call.
+    private func repositionIfScreenChanged() {
+        guard cursorScreen() ?? builtInScreen() ?? NSScreen.main !== currentScreen else { return }
+        positionPanel()
     }
 
     private func cursorScreen() -> NSScreen? {
@@ -187,6 +219,7 @@ final class OverlayPanelController: NSObject {
     /// Must be called on the main thread.
     func sendTouch(x: Float, active: Bool) {
         if active {
+            repositionIfScreenChanged()
             revealPanel(hideAfter: idleHideDelay)
         }
 
@@ -201,16 +234,18 @@ final class OverlayPanelController: NSObject {
     /// as a text label, held a bit longer than a plain touch since it's meant
     /// to be read, not just glanced at.
     func sendAction(_ label: String) {
+        repositionIfScreenChanged()
         revealPanel(hideAfter: actionHideDelay)
         let escaped = label.replacingOccurrences(of: "\"", with: "\\\"")
         webView.evaluateJavaScript("window.onAction && window.onAction(\"\(escaped)\");")
     }
 
     /// Shows the panel (if hidden) and (re)schedules the idle auto-hide,
-    /// unless pinned open via the hotkey.
+    /// unless pinned open via the hotkey. Screen tracking itself now happens
+    /// in repositionIfScreenChanged(), called on every touch tick regardless
+    /// of visibility — this just handles the fade and the hide timer.
     private func revealPanel(hideAfter delay: TimeInterval) {
         if !panel.isVisible {
-            positionPanel()
             fadeIn()
         }
 
