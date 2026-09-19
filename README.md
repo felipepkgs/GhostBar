@@ -1,4 +1,4 @@
-# TouchBarVisualizer
+# GhostBar
 <img width="593" height="142" alt="Gravação 2026-09-18 at 22 24 19" src="https://github.com/user-attachments/assets/0bf6f686-a1b3-4b08-9f23-34fa4a40ba6d" />
 
 My Touch Bar's OLED panel is dead — but the digitizer underneath it isn't. The
