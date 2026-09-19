@@ -18,6 +18,15 @@ final class OverlayPanelController: NSObject {
 
     private static let originDefaultsKey = "GhostBar.panelOrigin"
 
+    // NSWindow.didMoveNotification fires for both a real user drag AND our
+    // own positionPanel() calling setFrameOrigin — without this flag,
+    // positionPanel()'s very first auto-placement got immediately saved as
+    // if the user had dragged it there, and every subsequent call took the
+    // "saved position" early-return path forever, freezing the panel on
+    // whatever screen it first happened to appear on (cursorScreen()/
+    // builtInScreen() never ran again after that).
+    private var isRepositioningProgrammatically = false
+
     private let stripReader = ControlStripReader()
 
     override init() {
@@ -78,11 +87,20 @@ final class OverlayPanelController: NSObject {
 
     /// Remembers a manually dragged position across launches; otherwise
     /// centers low on the main screen, roughly under the physical Touch Bar.
+    /// Ignores moves positionPanel() made itself — see
+    /// isRepositioningProgrammatically's comment.
     @objc private func panelDidMove() {
+        guard !isRepositioningProgrammatically else { return }
         let origin = panel.frame.origin
         UserDefaults.standard.set(
             "\(origin.x),\(origin.y)", forKey: Self.originDefaultsKey
         )
+    }
+
+    private func setPanelOrigin(_ origin: NSPoint) {
+        isRepositioningProgrammatically = true
+        panel.setFrameOrigin(origin)
+        isRepositioningProgrammatically = false
     }
 
     /// Without this, switching apps while the panel is already visible (or
@@ -113,7 +131,7 @@ final class OverlayPanelController: NSObject {
                 // built-in one below — a saved drag position should still
                 // be honored wherever it currently lands.
                 if NSScreen.screens.contains(where: { $0.frame.intersects(candidate) }) {
-                    panel.setFrameOrigin(origin)
+                    setPanelOrigin(origin)
                     return
                 }
             }
@@ -130,7 +148,7 @@ final class OverlayPanelController: NSObject {
         let frame = screen.visibleFrame
         let x = frame.midX - panel.frame.width / 2
         let y = frame.minY + 60
-        panel.setFrameOrigin(NSPoint(x: x, y: y))
+        setPanelOrigin(NSPoint(x: x, y: y))
     }
 
     private func cursorScreen() -> NSScreen? {
