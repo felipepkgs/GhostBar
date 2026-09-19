@@ -14,8 +14,11 @@ action (brightness, volume, media keys).
 
 It cannot show you the *actual* pixels your apps are drawing on the Touch Bar
 — that turned out to be architecturally out of reach on this hardware (more
-on that below). What it gives you instead is everything that's independently
-observable: raw touch position, and named system actions.
+on that below). What it gives you instead is everything that's
+independently, definitively knowable: raw touch position, named system
+actions, and — read straight from macOS's own preferences, not inferred —
+which mode (Function Keys or Control Strip) is actually active right now
+and what your real Control Strip layout is.
 
 ## What it does
 
@@ -30,14 +33,14 @@ observable: raw touch position, and named system actions.
 - **Touch feedback on the strip itself.** As the dot crosses a key, that
   segment lights up — a bit of the tactile "did I actually hit that" signal
   the dead display would normally give you.
-- **Your real Control Strip, not a guess.** `ControlStripReader` reads your
-  actual customized Control Strip layout and the real Function Keys ⟷
-  Control Strip presentation mode — including per-app overrides — straight
-  from macOS's own preference domains (`com.apple.controlstrip`,
-  `com.apple.touchbar.agent`) via the public `CFPreferences` API. Only the
-  row that's actually active for the frontmost app is shown, and it
-  refreshes live the moment you switch apps — no static reference chart, no
-  guessing which mode you're in.
+- **Asserts your real mode — Function Keys or Control Strip — it doesn't
+  guess.** `ControlStripReader` reads macOS's own preference domains
+  (`com.apple.controlstrip`, `com.apple.touchbar.agent`) via the public
+  `CFPreferences` API, definitively determining which mode is active for
+  the frontmost app right now (per-app overrides included) and your actual
+  customized Control Strip button layout — not an inference from context,
+  not a static reference chart. Only the row that's actually active is
+  shown, and it refreshes live the moment you switch apps.
 - **Follows your cursor across monitors.** On a multi-display setup, the
   panel tracks whichever screen your cursor is currently on, live — checked
   on every touch, not just at the start of a new gesture — while still
