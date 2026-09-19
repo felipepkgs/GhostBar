@@ -92,6 +92,23 @@ and reliable. Arbitrary per-app Touch Bar content (a text editor's custom
 buttons, Safari's tab strip, etc.) is not — it never leaves the owning app's
 process as a system-wide signal, mirrored or otherwise.
 
+**Same wall, different API: system-wide Now Playing info.** Showing the
+current track/artist under the Control Strip's media controls looked
+promising — `MediaRemote.framework`'s `MRMediaRemoteGetNowPlayingInfo` is
+the same technique various third-party Now Playing menu bar utilities have
+used. Got the call itself right (its completion handler is a real
+Objective-C block, not a plain C function pointer — needs `@convention(block)`
+on that parameter, confirmed live: without it the callback still fires, just
+reads garbage instead of crashing). With that fixed, the call cleanly
+returns `nil` — not garbage, a real "no info" — for tracks Control Center's
+own Now Playing widget shows fine at the same moment (verified against both
+Music.app and a Safari tab). That gap between "the system clearly has the
+data" and "this call reports none of it" points at the same class of thing
+DFRTouchBarCreateDisplayStream hit: real data gated behind an entitlement
+first-party processes like Control Center have and an ad-hoc-signed
+third-party app doesn't. Tracked in [#9](https://github.com/felipepkgs/GhostBar/issues/9)
+in case that ever changes.
+
 ## Building and running
 
 The easiest way to install it — via [Homebrew](https://brew.sh):
