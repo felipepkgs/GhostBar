@@ -59,6 +59,14 @@ final class TouchPositionReader {
     /// Called on the main thread with the active touch's normalized x [0, 1] and whether a finger is down.
     var onTouch: ((_ x: Float, _ active: Bool) -> Void)?
 
+    /// nil once start() finds a working Touch Bar digitizer; otherwise a
+    /// short reason, set on whichever guard in start() bailed. Every failure
+    /// path here used to only NSLog — invisible unless someone's watching
+    /// Console.app. AppDelegate surfaces this in the menu instead, so the
+    /// "quietly disable instead of crash" behavior this app is built on
+    /// (see README) is actually visible when it happens.
+    private(set) var unavailableReason: String?
+
     private let touchBarFamilyID: Int32 = 176 // 113 is the trackpad
     private var devices: [MTDeviceRef] = []
     private var deviceStop: MTDeviceStopFn?
@@ -72,6 +80,7 @@ final class TouchPositionReader {
             "/System/Library/PrivateFrameworks/MultitouchSupport.framework/MultitouchSupport",
             RTLD_NOW
         ) else {
+            unavailableReason = "MultitouchSupport unavailable"
             NSLog("GhostBar: MultitouchSupport unavailable, touch position disabled")
             return
         }
@@ -87,12 +96,14 @@ final class TouchPositionReader {
             let registerCallback = sym("MTRegisterContactFrameCallback", as: MTRegisterContactFrameCallbackFn.self),
             let deviceStart = sym("MTDeviceStart", as: MTDeviceStartFn.self)
         else {
+            unavailableReason = "MultitouchSupport symbols missing"
             NSLog("GhostBar: MultitouchSupport symbols missing, touch position disabled")
             return
         }
         deviceStop = sym("MTDeviceStop", as: MTDeviceStopFn.self)
 
         guard let listRef = createList() else {
+            unavailableReason = "no multitouch device list"
             NSLog("GhostBar: MTDeviceCreateList returned nil")
             return
         }
@@ -110,6 +121,7 @@ final class TouchPositionReader {
         }
 
         guard !devices.isEmpty else {
+            unavailableReason = "no Touch Bar digitizer found"
             NSLog("GhostBar: no Touch Bar digitizer found (is this a Touch Bar Mac?)")
             return
         }

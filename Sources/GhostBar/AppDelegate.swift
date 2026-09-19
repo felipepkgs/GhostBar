@@ -3,6 +3,8 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var loginItem: NSMenuItem!
+    private var updateMenuItem: NSMenuItem!
+    private var pendingUpdate: UpdateChecker.Release?
     private let overlay = OverlayPanelController()
     private let touchReader = TouchPositionReader.shared
     private let actionReader = ActionKeyReader()
@@ -17,17 +19,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        setupStatusItem()
-        showOnboardingIfNeeded()
-        UpdateChecker.checkOnLaunch { [weak self] release in
-            guard let release else { return }
-            self?.presentUpdateAvailable(release)
-        }
-
         touchReader.onTouch = { [weak self] x, active in
             self?.overlay.sendTouch(x: x, active: active)
         }
+        // Runs before setupStatusItem() — it's fully synchronous, so
+        // touchReader.unavailableReason is known in time to show up in the
+        // menu on this same launch, rather than needing a rebuild later.
         touchReader.start()
+
+        setupStatusItem()
+        showOnboardingIfNeeded()
+        // Automatic check: no modal on launch, just updates the menu item —
+        // see presentUpdateAvailable's comment for why a launch-time
+        // NSAlert.runModal() would be the wrong call here.
+        UpdateChecker.checkOnLaunch { [weak self] release in
+            guard let self, let release else { return }
+            self.pendingUpdate = release
+            self.updateMenuItem.title = "Update Available (\(release.tagName))…"
+        }
 
         actionReader.onAction = { [weak self] label in
             self?.overlay.sendAction(label)
@@ -70,6 +79,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         toggleItem.target = self
         menu.addItem(toggleItem)
 
+        // Every failure path in TouchPositionReader.start() used to only
+        // NSLog — invisible unless you're watching Console.app. This turns
+        // that silent "quietly disabled" state (the app's whole design,
+        // per the README) into something you can actually see.
+        if let reason = touchReader.unavailableReason {
+            let unavailableItem = NSMenuItem(title: "⚠️ Touch Bar not detected (\(reason))", action: nil, keyEquivalent: "")
+            unavailableItem.isEnabled = false
+            menu.addItem(unavailableItem)
+        }
+
         menu.addItem(.separator())
 
         loginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLoginItem), keyEquivalent: "")
@@ -85,9 +104,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
-        let updateItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdatesNow), keyEquivalent: "")
-        updateItem.target = self
-        menu.addItem(updateItem)
+        updateMenuItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdatesNow), keyEquivalent: "")
+        updateMenuItem.target = self
+        menu.addItem(updateMenuItem)
 
         menu.addItem(.separator())
 
@@ -129,7 +148,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.show()
     }
 
+    /// User-initiated, so a modal is the right call here — unlike the
+    /// automatic launch-time check (see applicationDidFinishLaunching),
+    /// which just updates this same menu item instead of interrupting you.
     @objc private func checkForUpdatesNow() {
+        if let pendingUpdate {
+            presentUpdateAvailable(pendingUpdate)
+            return
+        }
         UpdateChecker.checkNow { [weak self] release in
             guard let self else { return }
             guard let release else {
@@ -141,6 +167,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 alert.runModal()
                 return
             }
+            self.pendingUpdate = release
             self.presentUpdateAvailable(release)
         }
     }
@@ -155,6 +182,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if alert.runModal() == .alertFirstButtonReturn, let url = URL(string: release.htmlURL) {
             NSWorkspace.shared.open(url)
         }
+        pendingUpdate = nil
+        updateMenuItem.title = "Check for Updates…"
     }
 
     /// Required placement for the Icons8 free-license attribution (Control

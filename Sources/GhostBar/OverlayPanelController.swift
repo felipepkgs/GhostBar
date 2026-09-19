@@ -3,6 +3,7 @@ import WebKit
 
 final class OverlayPanelController: NSObject {
     private let panel: NSPanel
+    private let glass: NSVisualEffectView
     private let webView: WKWebView
     private var lastSend: TimeInterval = 0
     private let minInterval: TimeInterval = 1.0 / 60.0 // caps evaluateJavaScript rate
@@ -59,6 +60,7 @@ final class OverlayPanelController: NSObject {
         glass.layer?.masksToBounds = true
         glass.layer?.borderWidth = 1
         glass.layer?.borderColor = NSColor(white: 1, alpha: 0.12).cgColor
+        self.glass = glass
 
         let webView = WKWebView(frame: glass.bounds)
         webView.autoresizingMask = [.width, .height]
@@ -169,6 +171,21 @@ final class OverlayPanelController: NSObject {
     /// the web view both auto-resize to match via their autoresizing masks.
     private func applyPanelSize() {
         let scale = CGFloat(Settings.panelScale)
+
+        // Resizing just the native frame stretches empty space around the
+        // page's fixed-pixel CSS content (icons, fonts, padding) instead of
+        // growing it — pageZoom scales the actual rendered content
+        // uniformly, the same way Safari's Cmd-+/- zoom does, so "Panel
+        // size" resizes the whole thing, not just the window around it.
+        // Cheap and idempotent, so it's fine to set unconditionally.
+        webView.pageZoom = scale
+
+        // Native AppKit layer properties, not page content — pageZoom
+        // doesn't touch these, so they'd stay visually fixed-size while
+        // everything else scales unless set here too.
+        glass.layer?.cornerRadius = 22 * scale
+        glass.layer?.borderWidth = 1 * scale
+
         let newSize = NSSize(width: Self.baseSize.width * scale, height: Self.baseSize.height * scale)
         guard panel.frame.size != newSize else { return }
 
