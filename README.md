@@ -30,13 +30,18 @@ observable: raw touch position, and named system actions.
 - **Touch feedback on the strip itself.** As the dot crosses a key, that
   segment lights up — a bit of the tactile "did I actually hit that" signal
   the dead display would normally give you.
-- **Two stacked reference strips.** Since the dot's x-position is just a
-  normalized `[0, 1]` fraction across the bar — layout-agnostic — it's drawn
-  on *two* rows at once: a Function Keys layout (F1–F12) and the stock
-  Control Strip layout, pixel-matched to the real default layout's grouping
-  and gaps. You can't know programmatically which mode the real Touch Bar is
-  in, but you can usually tell by context, and seeing the dot against both
-  guides is enough to know what you're about to press.
+- **Your real Control Strip, not a guess.** `ControlStripReader` reads your
+  actual customized Control Strip layout and the real Function Keys ⟷
+  Control Strip presentation mode — including per-app overrides — straight
+  from macOS's own preference domains (`com.apple.controlstrip`,
+  `com.apple.touchbar.agent`) via the public `CFPreferences` API. Only the
+  row that's actually active for the frontmost app is shown, and it
+  refreshes live the moment you switch apps — no static reference chart, no
+  guessing which mode you're in.
+- **Follows your cursor across monitors.** On a multi-display setup, the
+  panel tracks whichever screen your cursor is currently on, live — checked
+  on every touch, not just at the start of a new gesture — while still
+  honoring a manually dragged position on that same screen.
 - **Named action toasts.** Touch Bar presses for brightness/volume/mute/
   media playback/keyboard illumination fire the same system-wide
   `NSEvent.systemDefined` events physical F-keys do — fully public API, no
@@ -48,8 +53,20 @@ observable: raw touch position, and named system actions.
   relaunches.
 - **Global hotkey.** `⌃⌥⌘T` pins the panel open (or closes it), overriding
   auto-hide until you toggle it again.
+- **Preferences.** Hide-after-touch and hide-after-action delays, panel size
+  and opacity, a Preview button to see changes without touching the physical
+  Touch Bar, and Reset Position — all backed by `UserDefaults`, applied live
+  on the next touch/action with no relaunch needed.
+- **Checks for updates.** Compares the latest GitHub release tag against the
+  running version on launch (throttled to once a day) and via a "Check for
+  Updates…" menu item — no Sparkle, no self-replacing binary, just an alert
+  pointing you at the release page or `brew upgrade`.
+- **First-launch welcome.** A one-time window explaining what GhostBar does
+  and surfacing "Launch at Login" immediately, instead of leaving it buried
+  in the menu.
 - **Lives in the menu bar.** No Dock icon, no window chrome — just a small
-  status item with a toggle, an optional "Launch at Login", and quit.
+  status item with a toggle, Preferences, Launch at Login, Check for
+  Updates, About, and quit.
 
 ## Why it can't mirror actual content
 
@@ -119,12 +136,18 @@ so the overlay's look and feel can be iterated on without touching Swift.
 
 | File | Responsibility |
 |---|---|
-| `AppDelegate.swift` | Menu bar item, "Launch at Login" (`ServiceManagement`), wires up the other pieces |
+| `AppDelegate.swift` | Menu bar item, wires up every other piece, onboarding/Preferences/update-check triggers |
 | `HotkeyManager.swift` | Global `⌃⌥⌘T` toggle via Carbon (`RegisterEventHotKey`) |
 | `TouchPositionReader.swift` | Live touch position via `MultitouchSupport.framework` |
 | `ActionKeyReader.swift` | Named system actions via `NSEvent.systemDefined` |
-| `OverlayPanelController.swift` | The floating panel (`NSVisualEffectView` glass), auto show/hide, remembered position, native → JS bridge |
+| `OverlayPanelController.swift` | The floating panel (`NSVisualEffectView` glass), auto show/hide, cursor-follow positioning, native → JS bridge |
 | `ControlStripReader.swift` | Reads the user's real Control Strip layout + Touch Bar mode via `CFPreferences` |
+| `Settings.swift` | `UserDefaults`-backed Preferences values, read live by `OverlayPanelController` |
+| `PreferencesView.swift` | The Preferences window (SwiftUI) |
+| `OnboardingView.swift` | The first-launch welcome window (SwiftUI) |
+| `SwiftUIWindowController.swift` | Thin `NSWindowController` shared by Preferences and onboarding |
+| `LoginItem.swift` | `SMAppService` wrapper shared by the menu item, Preferences, and onboarding |
+| `UpdateChecker.swift` / `Version.swift` | GitHub Releases version check |
 | `Resources/overlay/` | The actual UI: `index.html`, `style.css`, `app.js`, `icons/` |
 | `Resources/statusbar/` | Menu bar icon (`ghost-icon.png`) |
 | `Packaging/` | `Info.plist` + `AppIcon.icns` for the `.app` bundle |
