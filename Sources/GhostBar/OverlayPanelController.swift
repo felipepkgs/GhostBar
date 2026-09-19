@@ -102,15 +102,23 @@ final class OverlayPanelController: NSObject {
             }
         }
 
-        // Default placement anchors to the built-in display specifically —
-        // the physical Touch Bar lives there, not on whichever screen macOS
-        // currently considers "main" (which follows keyboard focus and can
-        // be an external monitor).
-        guard let screen = builtInScreen() ?? NSScreen.main else { return }
+        // Default placement follows wherever the user is actually looking —
+        // the screen under the cursor — rather than always the built-in
+        // display: with an external monitor in use, that's usually not
+        // where attention is, even though the physical Touch Bar itself is
+        // always on the built-in screen regardless. Falls back to the
+        // built-in screen (then whatever NSScreen.main is) if the cursor
+        // can't be resolved to any connected screen.
+        guard let screen = cursorScreen() ?? builtInScreen() ?? NSScreen.main else { return }
         let frame = screen.visibleFrame
         let x = frame.midX - panel.frame.width / 2
         let y = frame.minY + 60
         panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    private func cursorScreen() -> NSScreen? {
+        let location = NSEvent.mouseLocation
+        return NSScreen.screens.first { $0.frame.contains(location) }
     }
 
     private func builtInScreen() -> NSScreen? {
