@@ -54,6 +54,27 @@ html, body {
   border-right: none;
 }
 
+/* Control Strip: pill-groups placed at exact measured positions (see the
+   inline left/width on each .group in index.html) — the real layout isn't
+   evenly spaced, so flexbox auto-distribution can't reproduce it. Segments
+   within a group are flush with a thin divider, matching the reference. */
+.bar.grouped {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.group {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  background: rgba(28, 28, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
 #action {
   position: absolute;
   inset: 0;

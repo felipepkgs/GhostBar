@@ -25,16 +25,38 @@
       <div class="row-label">Function Keys</div>
     </div>
     <div class="row">
-      <div class="bar" id="barControl">
-        <div class="seg">🔅</div>
-        <div class="seg">🔆</div>
-        <div class="seg">🖥</div>
-        <div class="seg">🔍</div>
-        <div class="seg">🎙</div>
-        <div class="seg">🌙</div>
-        <div class="seg">🔉</div>
-        <div class="seg">🔇</div>
-        <div class="seg">🔊</div>
+      <!-- Group positions/widths measured pixel-for-pixel from a reference
+           screenshot of the real default Control Strip (see 2.png in the
+           conversation) — not evenly distributed, so each is placed at its
+           own absolute left/width rather than left to flexbox. -->
+      <div class="bar grouped" id="barControl">
+        <div class="group" style="left: 0.70%; width: 13.95%">
+          <div class="seg">🔅</div>
+          <div class="seg">🔆</div>
+        </div>
+        <div class="group" style="left: 16.05%; width: 7.20%">
+          <div class="seg">🖥</div>
+        </div>
+        <div class="group" style="left: 24.80%; width: 7.05%">
+          <div class="seg">▦</div>
+        </div>
+        <div class="group" style="left: 33.40%; width: 13.85%">
+          <div class="seg">⌨−</div>
+          <div class="seg">⌨+</div>
+        </div>
+        <div class="group" style="left: 48.85%; width: 20.20%">
+          <div class="seg">⏪</div>
+          <div class="seg">⏯</div>
+          <div class="seg">⏩</div>
+        </div>
+        <div class="group" style="left: 70.50%; width: 20.25%">
+          <div class="seg">🔇</div>
+          <div class="seg">🔉</div>
+          <div class="seg">🔊</div>
+        </div>
+        <div class="group" style="left: 92.20%; width: 7.20%">
+          <div class="seg">✨</div>
+        </div>
         <div class="dot"></div>
       </div>
       <div class="row-label">Control Strip (default, may be customized)</div>
