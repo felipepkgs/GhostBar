@@ -1,14 +1,24 @@
 #!/usr/bin/env swift
-// Draws the GhostBar app icon (a dark card with the same pill+glow-dot motif
-// as the overlay itself) and exports every size iconutil needs for an .icns.
-// Run via Scripts/generate_icon.sh, not directly — that script also invokes
-// iconutil afterwards.
+// Draws the GhostBar app icon (the same Icons8 "Glyph Neue" ghost glyph as
+// the menu bar icon, on the overlay's dark glass gradient) and exports every
+// size iconutil needs for an .icns. Run via Scripts/generate_icon.sh, not
+// directly — that script also invokes iconutil afterwards.
+//
+// Previously a pill+glow-dot motif unrelated to the menu bar icon — Finder/
+// Dock/Raycast/Spotlight all showed a different "app identity" than the
+// status bar glyph. Source ghost at assets/ghost-source.png (Icons8
+// glyph-neue, 800px, white) — see README's Credits section.
 
 import AppKit
 
 let masterSize: CGFloat = 1024
 let outDir = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 try? FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
+
+let scriptDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+guard let ghost = NSImage(contentsOf: scriptDir.appendingPathComponent("assets/ghost-source.png")) else {
+    fatalError("assets/ghost-source.png missing")
+}
 
 func makeMaster() -> NSImage {
     let size = NSSize(width: masterSize, height: masterSize)
@@ -24,53 +34,19 @@ func makeMaster() -> NSImage {
     ])
     gradient?.draw(in: bgRect, angle: -60)
 
-    // The Control Strip pill, echoing the overlay's own visual language.
-    let pillRect = NSRect(x: masterSize * 0.16, y: masterSize * 0.44, width: masterSize * 0.68, height: masterSize * 0.145)
-    let pill = NSBezierPath(roundedRect: pillRect, xRadius: pillRect.height / 2, yRadius: pillRect.height / 2)
-    NSColor(calibratedWhite: 1, alpha: 0.12).setFill()
-    pill.fill()
-    NSColor(calibratedWhite: 1, alpha: 0.22).setStroke()
-    pill.lineWidth = masterSize * 0.004
-    pill.stroke()
-
-    // Faint segment dividers inside the pill.
-    NSColor(calibratedWhite: 1, alpha: 0.08).setStroke()
-    for i in 1..<4 {
-        let x = pillRect.minX + pillRect.width * CGFloat(i) / 4
-        let line = NSBezierPath()
-        line.move(to: NSPoint(x: x, y: pillRect.minY + pillRect.height * 0.18))
-        line.line(to: NSPoint(x: x, y: pillRect.maxY - pillRect.height * 0.18))
-        line.lineWidth = masterSize * 0.0025
-        line.stroke()
-    }
-
-    // Glowing touch dot, off-center like a finger mid-press.
-    let dotRadius = masterSize * 0.058
-    let dotCenter = NSPoint(x: pillRect.minX + pillRect.width * 0.64, y: pillRect.midY)
-    let dotColor = NSColor(calibratedRed: 0.19, green: 0.82, blue: 0.345, alpha: 1)
+    // The ghost itself, generously padded so it doesn't compete with
+    // macOS's own squircle mask right at the edge.
+    let inset = masterSize * 0.24
+    let ghostRect = NSRect(x: inset, y: inset, width: masterSize - inset * 2, height: masterSize - inset * 2)
 
     NSGraphicsContext.saveGraphicsState()
     let shadow = NSShadow()
-    shadow.shadowColor = dotColor.withAlphaComponent(0.95)
-    shadow.shadowBlurRadius = masterSize * 0.075
+    shadow.shadowColor = NSColor(calibratedWhite: 1, alpha: 0.25)
+    shadow.shadowBlurRadius = masterSize * 0.04
     shadow.shadowOffset = .zero
     shadow.set()
-
-    let dotPath = NSBezierPath(ovalIn: NSRect(
-        x: dotCenter.x - dotRadius, y: dotCenter.y - dotRadius,
-        width: dotRadius * 2, height: dotRadius * 2
-    ))
-    dotColor.setFill()
-    dotPath.fill()
+    ghost.draw(in: ghostRect, from: .zero, operation: .sourceOver, fraction: 1)
     NSGraphicsContext.restoreGraphicsState()
-
-    // Glossy highlight on the dot for a bit of dimensionality.
-    let highlight = NSBezierPath(ovalIn: NSRect(
-        x: dotCenter.x - dotRadius * 0.45, y: dotCenter.y + dotRadius * 0.1,
-        width: dotRadius * 0.9, height: dotRadius * 0.7
-    ))
-    NSColor(calibratedWhite: 1, alpha: 0.35).setFill()
-    highlight.fill()
 
     image.unlockFocus()
     return image

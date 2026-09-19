@@ -152,7 +152,7 @@ so the overlay's look and feel can be iterated on without touching Swift.
 | `Resources/statusbar/` | Menu bar icon (`ghost-icon.png`) |
 | `Packaging/` | `Info.plist` + `AppIcon.icns` for the `.app` bundle |
 | `Scripts/build_app.sh` | Assembles `GhostBar.app` from a release build |
-| `Scripts/generate_icon.swift` / `.sh` | Draws `AppIcon.icns` from scratch (pill + glow dot, matching the overlay's own look) — only needs re-running if the icon design changes |
+| `Scripts/generate_icon.swift` / `.sh` | Composites `AppIcon.icns` from `assets/ghost-source.png` — same ghost glyph as the menu bar icon, so Finder/Dock/Raycast/Spotlight match — only needs re-running if the icon design changes |
 
 Every private-framework symbol is resolved via `dlopen`/`dlsym` at runtime,
 never linked at build time — a missing or renamed symbol on some future
@@ -160,6 +160,7 @@ macOS disables that one feature instead of crashing the app.
 
 ## Credits
 
-Control Strip icons (`Resources/overlay/icons/`) and the menu bar glyph
-(`Resources/statusbar/`) are by [Icons8](https://icons8.com), used under
-their free license.
+Control Strip icons (`Resources/overlay/icons/`), the menu bar glyph
+(`Resources/statusbar/`), and the app icon (`Scripts/assets/ghost-source.png`,
+composited into `AppIcon.icns`) are by [Icons8](https://icons8.com), used
+under their free license.
