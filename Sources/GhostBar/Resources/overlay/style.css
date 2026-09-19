@@ -1,0 +1,152 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The panel behind this page is a real NSVisualEffectView (see
+   OverlayPanelController), so everything here is deliberately translucent
+   tints on top of native macOS frosted glass, not painted-on dark boxes. */
+#stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row-label {
+  font: 600 9px -apple-system, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+  padding-left: 3px;
+}
+
+.bar {
+  position: relative;
+  display: flex;
+  height: 34px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.seg {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.62);
+  font: 500 11px -apple-system, sans-serif;
+  border-right: 1px solid rgba(255, 255, 255, 0.055);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.seg:last-child {
+  border-right: none;
+}
+
+/* Lit up by app.js as the touch dot passes over it — a bit of the tactile
+   feedback the real (dead) display would have given you. */
+.seg.active-seg {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+/* Control Strip: pill-groups placed at exact measured positions (see the
+   inline left/width on each .group in index.html) — the real layout isn't
+   evenly spaced, so flexbox auto-distribution can't reproduce it. */
+.bar.grouped {
+  background: transparent;
+  box-shadow: none;
+}
+
+.group {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.group .seg {
+  border-right-color: rgba(255, 255, 255, 0.09);
+}
+
+.dot {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8bffab, #30d158 65%);
+  box-shadow: 0 0 0 4px rgba(48, 209, 88, 0.18), 0 0 14px 2px rgba(48, 209, 88, 0.65);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.1s linear, left 0.03s linear;
+  pointer-events: none;
+  animation: dot-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(48, 209, 88, 0.18), 0 0 14px 2px rgba(48, 209, 88, 0.65); }
+  50%      { box-shadow: 0 0 0 7px rgba(48, 209, 88, 0.10), 0 0 20px 4px rgba(48, 209, 88, 0.85); }
+}
+
+#action {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.92) translateY(4px);
+  transition: opacity 0.16s ease, transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1.2);
+  pointer-events: none;
+}
+
+#action.visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+#action .pill {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 20px;
+  border-radius: 14px;
+  background: rgba(18, 18, 20, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+#action .icon {
+  font-size: 17px;
+  line-height: 1;
+}
+
+#action .label {
+  font: 600 14px -apple-system, sans-serif;
+  color: #fff;
+  letter-spacing: 0.1px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+}

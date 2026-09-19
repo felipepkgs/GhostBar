@@ -1,7 +1,7 @@
 import AppKit
 import WebKit
 
-final class OverlayPanelController {
+final class OverlayPanelController: NSObject {
     private let panel: NSPanel
     private let webView: WKWebView
     private var lastSend: TimeInterval = 0
@@ -13,11 +13,33 @@ final class OverlayPanelController {
     private let idleHideDelay: TimeInterval = 1.5
     private let actionHideDelay: TimeInterval = 2.5
 
-    init() {
+    private let showAnimDuration: TimeInterval = 0.22
+    private let hideAnimDuration: TimeInterval = 0.28
+
+    private static let originDefaultsKey = "GhostBar.panelOrigin"
+
+    override init() {
         let barSize = NSRect(x: 0, y: 0, width: 680, height: 118)
-        let webView = WKWebView(frame: barSize)
-        webView.setValue(false, forKey: "drawsBackground") // let the CSS transparent background show through
+
+        // A real NSVisualEffectView gives the panel genuine macOS frosted
+        // glass reading the desktop behind it — CSS backdrop-filter alone
+        // can't do this over a fully transparent window, since there's no
+        // rendered content behind the page for the compositor to blur.
+        let glass = NSVisualEffectView(frame: barSize)
+        glass.material = .hudWindow
+        glass.blendingMode = .behindWindow
+        glass.state = .active
+        glass.wantsLayer = true
+        glass.layer?.cornerRadius = 22
+        glass.layer?.masksToBounds = true
+        glass.layer?.borderWidth = 1
+        glass.layer?.borderColor = NSColor(white: 1, alpha: 0.12).cgColor
+
+        let webView = WKWebView(frame: glass.bounds)
+        webView.autoresizingMask = [.width, .height]
+        webView.setValue(false, forKey: "drawsBackground") // let the glass show through the page
         self.webView = webView
+        glass.addSubview(webView)
 
         let panel = NSPanel(
             contentRect: barSize,
@@ -31,16 +53,32 @@ final class OverlayPanelController {
         panel.hasShadow = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isMovableByWindowBackground = true
-        panel.contentView = webView
+        panel.contentView = glass
         self.panel = panel
+
+        super.init()
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(panelDidMove),
+            name: NSWindow.didMoveNotification, object: panel
+        )
 
         loadOverlay()
         positionPanel()
     }
 
+    /// Remembers a manually dragged position across launches; otherwise
+    /// centers low on the main screen, roughly under the physical Touch Bar.
+    @objc private func panelDidMove() {
+        let origin = panel.frame.origin
+        UserDefaults.standard.set(
+            "\(origin.x),\(origin.y)", forKey: Self.originDefaultsKey
+        )
+    }
+
     private func loadOverlay() {
         guard let url = Bundle.module.url(forResource: "index", withExtension: "html", subdirectory: "overlay") else {
-            NSLog("TouchBarVisualizer: overlay resources missing from bundle")
+            NSLog("GhostBar: overlay resources missing from bundle")
             return
         }
         webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
@@ -49,6 +87,19 @@ final class OverlayPanelController {
     private func positionPanel() {
         guard let screen = NSScreen.main else { return }
         let frame = screen.visibleFrame
+
+        if let saved = UserDefaults.standard.string(forKey: Self.originDefaultsKey) {
+            let parts = saved.split(separator: ",").compactMap { Double($0) }
+            if parts.count == 2 {
+                let origin = NSPoint(x: parts[0], y: parts[1])
+                let candidate = NSRect(origin: origin, size: panel.frame.size)
+                if screen.frame.intersects(candidate) {
+                    panel.setFrameOrigin(origin)
+                    return
+                }
+            }
+        }
+
         let x = frame.midX - panel.frame.width / 2
         let y = frame.minY + 60
         panel.setFrameOrigin(NSPoint(x: x, y: y))
@@ -59,12 +110,35 @@ final class OverlayPanelController {
         hideWorkItem?.cancel()
         if panel.isVisible {
             isPinned = false
-            panel.orderOut(nil)
+            fadeOut()
         } else {
             isPinned = true
             positionPanel()
-            panel.orderFrontRegardless()
+            fadeIn()
         }
+    }
+
+    private func fadeIn() {
+        guard !panel.isVisible else { return }
+        panel.alphaValue = 0
+        panel.orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = showAnimDuration
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1
+        }
+    }
+
+    private func fadeOut() {
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = hideAnimDuration
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            panel.animator().alphaValue = 0
+        }, completionHandler: { [weak self] in
+            guard let self, self.panel.alphaValue == 0 else { return }
+            self.panel.orderOut(nil)
+            self.panel.alphaValue = 1
+        })
     }
 
     /// Must be called on the main thread.
@@ -94,7 +168,7 @@ final class OverlayPanelController {
     private func revealPanel(hideAfter delay: TimeInterval) {
         if !panel.isVisible {
             positionPanel()
-            panel.orderFrontRegardless()
+            fadeIn()
         }
 
         hideWorkItem?.cancel()
@@ -102,7 +176,7 @@ final class OverlayPanelController {
 
         let workItem = DispatchWorkItem { [weak self] in
             guard let self, !self.isPinned else { return }
-            self.panel.orderOut(nil)
+            self.fadeOut()
         }
         hideWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)

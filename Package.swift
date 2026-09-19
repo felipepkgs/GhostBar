@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "TouchBarVisualizer",
+    name: "GhostBar",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "TouchBarVisualizer",
+            name: "GhostBar",
             resources: [.copy("Resources/overlay")]
         )
     ]

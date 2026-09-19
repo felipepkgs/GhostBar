@@ -1,7 +1,9 @@
 import AppKit
+import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
+    private var loginItem: NSMenuItem!
     private let overlay = OverlayPanelController()
     private let touchReader = TouchPositionReader.shared
     private let actionReader = ActionKeyReader()
@@ -35,8 +37,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(
-            systemSymbolName: "hand.point.up.left",
-            accessibilityDescription: "Touch Bar Visualizer"
+            systemSymbolName: "rectangle.and.hand.point.up.left.filled",
+            accessibilityDescription: "GhostBar"
         )
 
         let menu = NSMenu()
@@ -46,6 +48,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(toggleItem)
 
         menu.addItem(.separator())
+
+        loginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLoginItem), keyEquivalent: "")
+        loginItem.target = self
+        loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        menu.addItem(loginItem)
+
+        menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
         statusItem.menu = menu
@@ -53,5 +62,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleOverlay() {
         overlay.toggle()
+    }
+
+    /// Only takes effect when running as the bundled GhostBar.app (built via
+    /// Scripts/build_app.sh) — SMAppService needs a real app bundle identity
+    /// to register a login item against. Under `swift run` this will log an
+    /// error and no-op rather than crash.
+    @objc private func toggleLoginItem() {
+        do {
+            if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            } else {
+                try SMAppService.mainApp.register()
+            }
+            loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        } catch {
+            NSLog("GhostBar: login item toggle failed (expected under `swift run`): \(error)")
+        }
     }
 }
