@@ -34,13 +34,13 @@ window.setControlStrip = function (items) {
   });
 };
 
-// Dims whichever row ISN'T the Touch Bar's actual current mode for the
+// Hides whichever row ISN'T the Touch Bar's actual current mode for the
 // frontmost app, instead of always presenting both as equally plausible.
 window.setMode = function (mode) {
   const fKeysRow = document.getElementById("barFKeys").closest(".row");
   const controlRow = document.getElementById("barControl").closest(".row");
-  fKeysRow.classList.toggle("dimmed", mode !== "functionKeys");
-  controlRow.classList.toggle("dimmed", mode !== "controlStrip");
+  fKeysRow.classList.toggle("hidden", mode !== "functionKeys");
+  controlRow.classList.toggle("hidden", mode !== "controlStrip");
 };
 
 window.onTouchPosition = function (data) {

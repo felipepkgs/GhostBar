@@ -25,14 +25,15 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: opacity 0.25s ease;
 }
 
 /* Set by app.js's setMode() on whichever row isn't the Touch Bar's actual
-   current mode for the frontmost app — dimmed, not hidden, since mode
-   detection is a best-effort read of undocumented state. */
-.row.dimmed {
-  opacity: 0.38;
+   current mode for the frontmost app. Fully removed from flow (not just
+   dimmed) so #stack's justify-content:center re-centers the remaining row
+   in the panel — safe to do live since this is set before the panel fades
+   in, never while it's visible. */
+.row.hidden {
+  display: none;
 }
 
 .row-label {

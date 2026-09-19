@@ -21,7 +21,10 @@ final class OverlayPanelController: NSObject {
     private let stripReader = ControlStripReader()
 
     override init() {
-        let barSize = NSRect(x: 0, y: 0, width: 680, height: 118)
+        // Sized for one row (only one is ever shown now — see setMode in
+        // app.js) plus #stack's padding; was 118 back when both rows
+        // stacked visibly at once.
+        let barSize = NSRect(x: 0, y: 0, width: 680, height: 82)
 
         // A real NSVisualEffectView gives the panel genuine macOS frosted
         // glass reading the desktop behind it — CSS backdrop-filter alone
@@ -64,6 +67,10 @@ final class OverlayPanelController: NSObject {
             self, selector: #selector(panelDidMove),
             name: NSWindow.didMoveNotification, object: panel
         )
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(frontmostAppChanged),
+            name: NSWorkspace.didActivateApplicationNotification, object: nil
+        )
 
         loadOverlay()
         positionPanel()
@@ -76,6 +83,16 @@ final class OverlayPanelController: NSObject {
         UserDefaults.standard.set(
             "\(origin.x),\(origin.y)", forKey: Self.originDefaultsKey
         )
+    }
+
+    /// Without this, switching apps while the panel is already visible (or
+    /// mid idle-hide countdown — still `isVisible` until it fully fades)
+    /// left the stale mode/layout on screen until the panel closed and
+    /// reopened. refreshLiveLayout is also called in fadeIn(), so this only
+    /// needs to cover the "already showing" case.
+    @objc private func frontmostAppChanged() {
+        guard panel.isVisible else { return }
+        refreshLiveLayout()
     }
 
     private func loadOverlay() {
@@ -102,15 +119,23 @@ final class OverlayPanelController: NSObject {
             }
         }
 
-        // Default placement anchors to the built-in display specifically —
-        // the physical Touch Bar lives there, not on whichever screen macOS
-        // currently considers "main" (which follows keyboard focus and can
-        // be an external monitor).
-        guard let screen = builtInScreen() ?? NSScreen.main else { return }
+        // Default placement follows wherever the user is actually looking —
+        // the screen under the cursor — rather than always the built-in
+        // display: with an external monitor in use, that's usually not
+        // where attention is, even though the physical Touch Bar itself is
+        // always on the built-in screen regardless. Falls back to the
+        // built-in screen (then whatever NSScreen.main is) if the cursor
+        // can't be resolved to any connected screen.
+        guard let screen = cursorScreen() ?? builtInScreen() ?? NSScreen.main else { return }
         let frame = screen.visibleFrame
         let x = frame.midX - panel.frame.width / 2
         let y = frame.minY + 60
         panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    private func cursorScreen() -> NSScreen? {
+        let location = NSEvent.mouseLocation
+        return NSScreen.screens.first { $0.frame.contains(location) }
     }
 
     private func builtInScreen() -> NSScreen? {
