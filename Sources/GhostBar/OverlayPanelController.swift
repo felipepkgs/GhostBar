@@ -87,24 +87,39 @@ final class OverlayPanelController: NSObject {
     }
 
     private func positionPanel() {
-        guard let screen = NSScreen.main else { return }
-        let frame = screen.visibleFrame
-
         if let saved = UserDefaults.standard.string(forKey: Self.originDefaultsKey) {
             let parts = saved.split(separator: ",").compactMap { Double($0) }
             if parts.count == 2 {
                 let origin = NSPoint(x: parts[0], y: parts[1])
                 let candidate = NSRect(origin: origin, size: panel.frame.size)
-                if screen.frame.intersects(candidate) {
+                // Checked against every connected screen, not just the
+                // built-in one below — a saved drag position should still
+                // be honored wherever it currently lands.
+                if NSScreen.screens.contains(where: { $0.frame.intersects(candidate) }) {
                     panel.setFrameOrigin(origin)
                     return
                 }
             }
         }
 
+        // Default placement anchors to the built-in display specifically —
+        // the physical Touch Bar lives there, not on whichever screen macOS
+        // currently considers "main" (which follows keyboard focus and can
+        // be an external monitor).
+        guard let screen = builtInScreen() ?? NSScreen.main else { return }
+        let frame = screen.visibleFrame
         let x = frame.midX - panel.frame.width / 2
         let y = frame.minY + 60
         panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    private func builtInScreen() -> NSScreen? {
+        NSScreen.screens.first { screen in
+            guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
+                return false
+            }
+            return CGDisplayIsBuiltin(CGDirectDisplayID(number.uint32Value)) != 0
+        }
     }
 
     /// Hotkey-driven: pins the panel open regardless of touch activity, or closes it.
