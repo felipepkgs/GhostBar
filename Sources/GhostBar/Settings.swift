@@ -8,6 +8,7 @@ enum SettingsKey {
     static let panelScale = "GhostBar.panelScale"
     static let panelOpacity = "GhostBar.panelOpacity"
     static let hasOnboarded = "GhostBar.hasOnboarded"
+    static let lastUpdateCheck = "GhostBar.lastUpdateCheck"
 }
 
 /// Read-side for OverlayPanelController. Defaults are inlined here rather

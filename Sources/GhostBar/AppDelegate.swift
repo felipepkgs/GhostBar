@@ -19,6 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupStatusItem()
         showOnboardingIfNeeded()
+        UpdateChecker.checkOnLaunch { [weak self] release in
+            guard let release else { return }
+            self?.presentUpdateAvailable(release)
+        }
 
         touchReader.onTouch = { [weak self] x, active in
             self?.overlay.sendTouch(x: x, active: active)
@@ -81,6 +85,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
+        let updateItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdatesNow), keyEquivalent: "")
+        updateItem.target = self
+        menu.addItem(updateItem)
+
+        menu.addItem(.separator())
+
         let aboutItem = NSMenuItem(title: "About GhostBar", action: #selector(showAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
@@ -117,6 +127,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         onboardingWindow = controller
         controller.show()
+    }
+
+    @objc private func checkForUpdatesNow() {
+        UpdateChecker.checkNow { [weak self] release in
+            guard let self else { return }
+            guard let release else {
+                let alert = NSAlert()
+                alert.messageText = "You're up to date"
+                alert.informativeText = "GhostBar \(AppVersion.current) is the latest version."
+                alert.addButton(withTitle: "OK")
+                NSApp.activate(ignoringOtherApps: true)
+                alert.runModal()
+                return
+            }
+            self.presentUpdateAvailable(release)
+        }
+    }
+
+    private func presentUpdateAvailable(_ release: UpdateChecker.Release) {
+        let alert = NSAlert()
+        alert.messageText = "GhostBar \(release.tagName) is available"
+        alert.informativeText = "You're on \(AppVersion.current). Installed via Homebrew? Just run `brew upgrade`. Otherwise, grab the new build from the release page."
+        alert.addButton(withTitle: "View Release")
+        alert.addButton(withTitle: "Not Now")
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn, let url = URL(string: release.htmlURL) {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     /// Required placement for the Icons8 free-license attribution (Control
