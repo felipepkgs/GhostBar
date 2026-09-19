@@ -9,6 +9,8 @@ enum SettingsKey {
     static let panelOpacity = "GhostBar.panelOpacity"
     static let hasOnboarded = "GhostBar.hasOnboarded"
     static let lastUpdateCheck = "GhostBar.lastUpdateCheck"
+    static let hotkeyKeyCode = "GhostBar.hotkeyKeyCode"
+    static let hotkeyModifiers = "GhostBar.hotkeyModifiers"
 }
 
 /// Read-side for OverlayPanelController. Defaults are inlined here rather
@@ -35,5 +37,22 @@ enum Settings {
     static var hasOnboarded: Bool {
         get { UserDefaults.standard.bool(forKey: SettingsKey.hasOnboarded) }
         set { UserDefaults.standard.set(newValue, forKey: SettingsKey.hasOnboarded) }
+    }
+
+    // nil (unset) means "use HotkeyManager's built-in default" — kept as
+    // plain Int/UInt32 here rather than importing Carbon just for two
+    // constants; HotkeyManager (which already imports Carbon) owns the
+    // actual default values and the recorded-combo -> display-string logic.
+    static var hotkeyKeyCode: UInt32? {
+        (UserDefaults.standard.object(forKey: SettingsKey.hotkeyKeyCode) as? Int).map(UInt32.init)
+    }
+
+    static var hotkeyModifiers: UInt32? {
+        (UserDefaults.standard.object(forKey: SettingsKey.hotkeyModifiers) as? Int).map(UInt32.init)
+    }
+
+    static func setHotkey(keyCode: UInt32, modifiers: UInt32) {
+        UserDefaults.standard.set(Int(keyCode), forKey: SettingsKey.hotkeyKeyCode)
+        UserDefaults.standard.set(Int(modifiers), forKey: SettingsKey.hotkeyModifiers)
     }
 }

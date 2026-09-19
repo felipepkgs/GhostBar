@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PreferencesView: View {
     let overlay: OverlayPanelController
+    let hotkeys: HotkeyManager
 
     @AppStorage(SettingsKey.idleHideDelay) private var idleHideDelay = 1.5
     @AppStorage(SettingsKey.actionHideDelay) private var actionHideDelay = 2.5
@@ -38,6 +39,14 @@ struct PreferencesView: View {
 
             Section("Position") {
                 Button("Reset Position") { overlay.resetPosition() }
+            }
+
+            Section("Global Hotkey") {
+                HStack {
+                    Text("Toggle Overlay")
+                    Spacer()
+                    HotkeyRecorderButton(hotkeys: hotkeys)
+                }
             }
 
             Section {

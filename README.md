@@ -51,12 +51,14 @@ observable: raw touch position, and named system actions.
   the Touch Bar and fades (not snaps) out ~1.5s after you lift your finger.
   Drag it anywhere on screen and it reopens there next time, across
   relaunches.
-- **Global hotkey.** `⌃⌥⌘T` pins the panel open (or closes it), overriding
-  auto-hide until you toggle it again.
+- **Global hotkey.** `⌃⌥⌘T` by default — pins the panel open (or closes it),
+  overriding auto-hide until you toggle it again. Rebindable in Preferences.
 - **Preferences.** Hide-after-touch and hide-after-action delays, panel size
-  and opacity, a Preview button to see changes without touching the physical
-  Touch Bar, and Reset Position — all backed by `UserDefaults`, applied live
-  on the next touch/action with no relaunch needed.
+  and opacity, a Preview button (stays open while Preferences is open,
+  instead of auto-hiding after a few seconds) to see changes without
+  touching the physical Touch Bar, Reset Position, and a recorder to rebind
+  the global hotkey — all backed by `UserDefaults`, applied live with no
+  relaunch needed.
 - **Checks for updates.** Compares the latest GitHub release tag against the
   running version on launch (throttled to once a day) and via a "Check for
   Updates…" menu item — no Sparkle, no self-replacing binary, just an alert
@@ -154,7 +156,8 @@ so the overlay's look and feel can be iterated on without touching Swift.
 | File | Responsibility |
 |---|---|
 | `AppDelegate.swift` | Menu bar item, wires up every other piece, onboarding/Preferences/update-check triggers |
-| `HotkeyManager.swift` | Global `⌃⌥⌘T` toggle via Carbon (`RegisterEventHotKey`) |
+| `HotkeyManager.swift` | Global toggle hotkey via Carbon (`RegisterEventHotKey`), rebindable via Preferences |
+| `HotkeyRecorderButton.swift` | Preferences' "press keys to rebind" control (AppKit-backed, see its header comment) |
 | `TouchPositionReader.swift` | Live touch position via `MultitouchSupport.framework` |
 | `ActionKeyReader.swift` | Named system actions via `NSEvent.systemDefined` |
 | `OverlayPanelController.swift` | The floating panel (`NSVisualEffectView` glass), auto show/hide, cursor-follow positioning, native → JS bridge |
@@ -170,10 +173,28 @@ so the overlay's look and feel can be iterated on without touching Swift.
 | `Packaging/` | `Info.plist` + `AppIcon.icns` for the `.app` bundle |
 | `Scripts/build_app.sh` | Assembles `GhostBar.app` from a release build |
 | `Scripts/generate_icon.swift` / `.sh` | Composites `AppIcon.icns` from `assets/ghost-source.png` — same ghost glyph as the menu bar icon, so Finder/Dock/Raycast/Spotlight match — only needs re-running if the icon design changes |
+| `.github/workflows/release.yml` | Builds, tags, and releases on every `master` push that touches source/packaging; auto-bumps the patch version unless the commit already bumped it; updates the Homebrew tap |
 
 Every private-framework symbol is resolved via `dlopen`/`dlsym` at runtime,
 never linked at build time — a missing or renamed symbol on some future
 macOS disables that one feature instead of crashing the app.
+
+## Releasing
+
+Every push to `master` that touches `Sources/`, `Package.swift`,
+`Packaging/`, or the build/icon scripts triggers `.github/workflows/release.yml`:
+it builds and zips `GhostBar.app`, auto-bumps `Packaging/Info.plist`'s patch
+version (unless that commit already set a fresh, unreleased version — e.g. a
+manual minor/major bump), tags and publishes a GitHub Release, then updates
+the `felipepkgs/homebrew-ghostbar` cask's version and checksum. No manual
+`build_app.sh` / `gh release create` dance needed for routine changes.
+
+The Homebrew-tap step needs a `HOMEBREW_TAP_TOKEN` repo secret — a
+fine-grained PAT scoped to `felipepkgs/homebrew-ghostbar` with Contents:
+read & write, created at github.com/settings/tokens and set via
+`gh secret set HOMEBREW_TAP_TOKEN --repo felipepkgs/GhostBar`. Until that
+secret exists, the GhostBar release itself still succeeds — only the tap
+update fails.
 
 ## Credits
 

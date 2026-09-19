@@ -268,13 +268,29 @@ final class OverlayPanelController: NSObject {
     /// size/opacity/hide-delay is currently set, without needing the
     /// physical Touch Bar. Forces a fresh fadeIn even if already visible, so
     /// a changed setting is actually reflected rather than silently no-op'd
-    /// by fadeIn's `!panel.isVisible` guard.
+    /// by fadeIn's `!panel.isVisible` guard. Pins the panel open (like the
+    /// hotkey toggle) instead of auto-hiding after a few seconds — you're
+    /// actively comparing settings while Preferences stays open, not
+    /// glancing at it — and stays until endPreview() un-pins it when
+    /// Preferences closes.
     func preview() {
         if panel.isVisible {
             panel.orderOut(nil)
             panel.alphaValue = 1
         }
-        revealPanel(hideAfter: 3.0)
+        isPinned = true
+        hideWorkItem?.cancel()
+        positionPanel()
+        fadeIn()
+    }
+
+    /// Called when the Preferences window closes — undoes preview()'s pin.
+    /// A no-op if Preview was never clicked (isPinned already false, e.g.
+    /// set by the hotkey toggle instead).
+    func endPreview() {
+        guard isPinned else { return }
+        isPinned = false
+        fadeOut()
     }
 
     /// Must be called on the main thread.
