@@ -128,7 +128,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if preferencesWindow == nil {
             preferencesWindow = SwiftUIWindowController(
                 title: "GhostBar Preferences",
-                content: PreferencesView(overlay: overlay)
+                content: PreferencesView(overlay: overlay, hotkeys: hotkeys),
+                onClose: { [weak self] in self?.overlay.endPreview() }
             )
         }
         preferencesWindow?.show()
