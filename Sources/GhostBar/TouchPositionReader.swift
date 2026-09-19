@@ -72,7 +72,7 @@ final class TouchPositionReader {
             "/System/Library/PrivateFrameworks/MultitouchSupport.framework/MultitouchSupport",
             RTLD_NOW
         ) else {
-            NSLog("TouchBarVisualizer: MultitouchSupport unavailable, touch position disabled")
+            NSLog("GhostBar: MultitouchSupport unavailable, touch position disabled")
             return
         }
 
@@ -87,13 +87,13 @@ final class TouchPositionReader {
             let registerCallback = sym("MTRegisterContactFrameCallback", as: MTRegisterContactFrameCallbackFn.self),
             let deviceStart = sym("MTDeviceStart", as: MTDeviceStartFn.self)
         else {
-            NSLog("TouchBarVisualizer: MultitouchSupport symbols missing, touch position disabled")
+            NSLog("GhostBar: MultitouchSupport symbols missing, touch position disabled")
             return
         }
         deviceStop = sym("MTDeviceStop", as: MTDeviceStopFn.self)
 
         guard let listRef = createList() else {
-            NSLog("TouchBarVisualizer: MTDeviceCreateList returned nil")
+            NSLog("GhostBar: MTDeviceCreateList returned nil")
             return
         }
         let list = listRef.takeRetainedValue()
@@ -110,7 +110,7 @@ final class TouchPositionReader {
         }
 
         guard !devices.isEmpty else {
-            NSLog("TouchBarVisualizer: no Touch Bar digitizer found (is this a Touch Bar Mac?)")
+            NSLog("GhostBar: no Touch Bar digitizer found (is this a Touch Bar Mac?)")
             return
         }
 
