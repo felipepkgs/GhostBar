@@ -61,6 +61,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(loginItem)
 
         menu.addItem(.separator())
+
+        let aboutItem = NSMenuItem(title: "About GhostBar", action: #selector(showAbout), keyEquivalent: "")
+        aboutItem.target = self
+        menu.addItem(aboutItem)
+
+        menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
         statusItem.menu = menu
@@ -68,6 +74,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleOverlay() {
         overlay.toggle()
+    }
+
+    /// Required placement for the Icons8 free-license attribution (Control
+    /// Strip icons in Resources/overlay/icons/) — see also README's Credits
+    /// section, the license's other allowed placement.
+    @objc private func showAbout() {
+        let credits = NSMutableAttributedString(
+            string: "Touch Bar icons by ",
+            attributes: [.font: NSFont.systemFont(ofSize: 11)]
+        )
+        credits.append(NSAttributedString(
+            string: "Icons8",
+            attributes: [
+                .font: NSFont.systemFont(ofSize: 11),
+                .link: URL(string: "https://icons8.com")!,
+            ]
+        ))
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     /// Guards against two instances registering the same global hotkey and
