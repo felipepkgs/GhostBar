@@ -27,6 +27,13 @@ final class OverlayPanelController: NSObject {
     // builtInScreen() never ran again after that).
     private var isRepositioningProgrammatically = false
 
+    // The screen positionPanel() last placed the panel on — compared against
+    // the cursor's current screen on every touch tick so the panel follows
+    // live as you move to another monitor, instead of only re-resolving at
+    // the start of a new gesture (which meant lifting your finger and
+    // waiting for a fade before a screen change took effect).
+    private var currentScreen: NSScreen?
+
     private let stripReader = ControlStripReader()
 
     override init() {
@@ -121,34 +128,41 @@ final class OverlayPanelController: NSObject {
         webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
     }
 
+    /// Always resolves the screen fresh (cursor's screen wins, falling back
+    /// to the built-in display then NSScreen.main) — the panel is glued to
+    /// wherever the user is actually looking, not pinned to whichever screen
+    /// it first happened to appear on. A manually dragged position is only
+    /// honored when it lands on THAT resolved screen, so dragging on one
+    /// monitor can't freeze the panel there once the cursor moves to another.
     private func positionPanel() {
+        guard let screen = cursorScreen() ?? builtInScreen() ?? NSScreen.main else { return }
+        currentScreen = screen
+
         if let saved = UserDefaults.standard.string(forKey: Self.originDefaultsKey) {
             let parts = saved.split(separator: ",").compactMap { Double($0) }
             if parts.count == 2 {
                 let origin = NSPoint(x: parts[0], y: parts[1])
                 let candidate = NSRect(origin: origin, size: panel.frame.size)
-                // Checked against every connected screen, not just the
-                // built-in one below — a saved drag position should still
-                // be honored wherever it currently lands.
-                if NSScreen.screens.contains(where: { $0.frame.intersects(candidate) }) {
+                if screen.frame.intersects(candidate) {
                     setPanelOrigin(origin)
                     return
                 }
             }
         }
 
-        // Default placement follows wherever the user is actually looking —
-        // the screen under the cursor — rather than always the built-in
-        // display: with an external monitor in use, that's usually not
-        // where attention is, even though the physical Touch Bar itself is
-        // always on the built-in screen regardless. Falls back to the
-        // built-in screen (then whatever NSScreen.main is) if the cursor
-        // can't be resolved to any connected screen.
-        guard let screen = cursorScreen() ?? builtInScreen() ?? NSScreen.main else { return }
         let frame = screen.visibleFrame
         let x = frame.midX - panel.frame.width / 2
         let y = frame.minY + 60
         setPanelOrigin(NSPoint(x: x, y: y))
+    }
+
+    /// Re-resolves the cursor's screen and repositions only if it actually
+    /// differs from where the panel currently sits — called on every touch
+    /// tick so the panel tracks the cursor live, without doing the full
+    /// UserDefaults/screen-matching work on every single call.
+    private func repositionIfScreenChanged() {
+        guard cursorScreen() ?? builtInScreen() ?? NSScreen.main !== currentScreen else { return }
+        positionPanel()
     }
 
     private func cursorScreen() -> NSScreen? {
@@ -202,18 +216,12 @@ final class OverlayPanelController: NSObject {
         })
     }
 
-    // Tracks the rising edge of touch activity, so a fresh gesture
-    // re-resolves the panel's screen even if it's still visible/mid
-    // idle-hide countdown from the previous one — see revealPanel's
-    // comment for why panel.isVisible alone isn't enough for this.
-    private var wasTouchActive = false
-
     /// Must be called on the main thread.
     func sendTouch(x: Float, active: Bool) {
         if active {
-            revealPanel(hideAfter: idleHideDelay, isNewGesture: !wasTouchActive)
+            repositionIfScreenChanged()
+            revealPanel(hideAfter: idleHideDelay)
         }
-        wasTouchActive = active
 
         let now = ProcessInfo.processInfo.systemUptime
         guard now - lastSend >= minInterval else { return }
@@ -226,24 +234,17 @@ final class OverlayPanelController: NSObject {
     /// as a text label, held a bit longer than a plain touch since it's meant
     /// to be read, not just glanced at.
     func sendAction(_ label: String) {
-        // Each press is a discrete event (not a 60Hz stream like touch), so
-        // always safe/cheap to treat as its own fresh gesture.
-        revealPanel(hideAfter: actionHideDelay, isNewGesture: true)
+        repositionIfScreenChanged()
+        revealPanel(hideAfter: actionHideDelay)
         let escaped = label.replacingOccurrences(of: "\"", with: "\\\"")
         webView.evaluateJavaScript("window.onAction && window.onAction(\"\(escaped)\");")
     }
 
     /// Shows the panel (if hidden) and (re)schedules the idle auto-hide,
-    /// unless pinned open via the hotkey. `positionPanel()` used to only run
-    /// when the panel was actually hidden — but `panel.isVisible` stays true
-    /// through the whole fade-out countdown, so moving the cursor to another
-    /// screen and touching again before the fade finished kept showing the
-    /// panel wherever it already was. Now re-resolved on every fresh
-    /// gesture (isNewGesture), regardless of current visibility.
-    private func revealPanel(hideAfter delay: TimeInterval, isNewGesture: Bool) {
-        if isNewGesture {
-            positionPanel()
-        }
+    /// unless pinned open via the hotkey. Screen tracking itself now happens
+    /// in repositionIfScreenChanged(), called on every touch tick regardless
+    /// of visibility — this just handles the fade and the hide timer.
+    private func revealPanel(hideAfter delay: TimeInterval) {
         if !panel.isVisible {
             fadeIn()
         }
