@@ -77,6 +77,17 @@ process as a system-wide signal, mirrored or otherwise.
 
 ## Building and running
 
+The easiest way to install it — via [Homebrew](https://brew.sh):
+
+```sh
+brew tap felipepkgs/ghostbar
+brew install --cask ghostbar
+```
+
+Same ad-hoc-signed, unsigned-by-Apple caveat as below; the cask clears the
+Gatekeeper quarantine flag for you, so there's no manual right-click → Open
+step needed.
+
 For quick iteration, straight from the terminal:
 
 ```sh
@@ -115,6 +126,7 @@ so the overlay's look and feel can be iterated on without touching Swift.
 | `OverlayPanelController.swift` | The floating panel (`NSVisualEffectView` glass), auto show/hide, remembered position, native → JS bridge |
 | `ControlStripReader.swift` | Reads the user's real Control Strip layout + Touch Bar mode via `CFPreferences` |
 | `Resources/overlay/` | The actual UI: `index.html`, `style.css`, `app.js`, `icons/` |
+| `Resources/statusbar/` | Menu bar icon (`ghost-icon.png`) |
 | `Packaging/` | `Info.plist` + `AppIcon.icns` for the `.app` bundle |
 | `Scripts/build_app.sh` | Assembles `GhostBar.app` from a release build |
 | `Scripts/generate_icon.swift` / `.sh` | Draws `AppIcon.icns` from scratch (pill + glow dot, matching the overlay's own look) — only needs re-running if the icon design changes |
@@ -125,5 +137,6 @@ macOS disables that one feature instead of crashing the app.
 
 ## Credits
 
-Control Strip icons (`Resources/overlay/icons/`) are by [Icons8](https://icons8.com),
-used under their free license.
+Control Strip icons (`Resources/overlay/icons/`) and the menu bar glyph
+(`Resources/statusbar/`) are by [Icons8](https://icons8.com), used under
+their free license.

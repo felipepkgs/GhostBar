@@ -42,10 +42,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(
-            systemSymbolName: "rectangle.and.hand.point.up.left.filled",
-            accessibilityDescription: "GhostBar"
-        )
+        // Icons8 "Glyph Neue" ghost glyph (Resources/statusbar/) — on-theme
+        // with the app's name. Template mode lets AppKit recolor it for the
+        // light/dark menu bar automatically, same as an SF Symbol would.
+        // Bundle.image(forResource:) only searches the bundle's top-level
+        // Resources/, not subdirectories — needs the explicit lookup, same
+        // as loadOverlay()'s subdirectory: "overlay" below.
+        if let url = Bundle.module.url(forResource: "ghost-icon", withExtension: "png", subdirectory: "statusbar"),
+           let icon = NSImage(contentsOf: url) {
+            icon.isTemplate = true
+            icon.size = NSSize(width: 18, height: 18)
+            icon.accessibilityDescription = "GhostBar"
+            statusItem.button?.image = icon
+        } else {
+            NSLog("GhostBar: status bar icon missing from bundle")
+        }
 
         let menu = NSMenu()
 

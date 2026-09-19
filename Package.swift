@@ -7,7 +7,7 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "GhostBar",
-            resources: [.copy("Resources/overlay")]
+            resources: [.copy("Resources/overlay"), .copy("Resources/statusbar")]
         )
     ]
 )
