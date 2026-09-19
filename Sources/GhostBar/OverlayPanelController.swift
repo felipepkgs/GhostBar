@@ -18,6 +18,8 @@ final class OverlayPanelController: NSObject {
 
     private static let originDefaultsKey = "GhostBar.panelOrigin"
 
+    private let stripReader = ControlStripReader()
+
     override init() {
         let barSize = NSRect(x: 0, y: 0, width: 680, height: 118)
 
@@ -120,6 +122,7 @@ final class OverlayPanelController: NSObject {
 
     private func fadeIn() {
         guard !panel.isVisible else { return }
+        refreshLiveLayout()
         panel.alphaValue = 0
         panel.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { ctx in
@@ -180,5 +183,40 @@ final class OverlayPanelController: NSObject {
         }
         hideWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    /// Re-reads the user's real Control Strip layout and current
+    /// presentation mode and pushes both to the page. Called right before
+    /// every show rather than continuously — see ControlStripReader's
+    /// header comment for why that's sufficient.
+    private func refreshLiveLayout() {
+        let items = stripReader.currentStripItems()
+        let mode = stripReader.currentMode(frontmostBundleID: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+
+        if let itemsJSON = Self.encode(items) {
+            webView.evaluateJavaScript("window.setControlStrip && window.setControlStrip(\(itemsJSON));")
+        }
+        let modeLiteral = mode == .functionKeys ? "functionKeys" : "controlStrip"
+        webView.evaluateJavaScript("window.setMode && window.setMode(\"\(modeLiteral)\");")
+    }
+
+    private struct JSONStripItem: Encodable {
+        let kind: String
+        let icons: [String]
+    }
+
+    private static func encode(_ items: [ControlStripReader.ItemKind]) -> String? {
+        let encodable: [JSONStripItem] = items.map { item in
+            switch item {
+            case .single(let icon):
+                return JSONStripItem(kind: "single", icons: [icon])
+            case .group(let icons):
+                return JSONStripItem(kind: "group", icons: icons)
+            case .flexibleSpace:
+                return JSONStripItem(kind: "space", icons: [])
+            }
+        }
+        guard let data = try? JSONEncoder().encode(encodable) else { return nil }
+        return String(data: data, encoding: .utf8)
     }
 }

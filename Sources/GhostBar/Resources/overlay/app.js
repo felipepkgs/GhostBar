@@ -1,5 +1,41 @@
 const bars = document.querySelectorAll(".bar");
 
+// Rebuilds the Control Strip row from the user's real, live customization —
+// pushed from Swift (ControlStripReader) right before each fade-in.
+window.setControlStrip = function (items) {
+  const bar = document.getElementById("barControl");
+  const dot = bar.querySelector(".dot");
+  bar.querySelectorAll(".group, .spacer").forEach((el) => el.remove());
+
+  items.forEach((item) => {
+    if (item.kind === "space") {
+      const spacer = document.createElement("div");
+      spacer.className = "spacer";
+      bar.insertBefore(spacer, dot);
+      return;
+    }
+    const group = document.createElement("div");
+    group.className = "group";
+    group.style.flex = String(item.icons.length);
+    item.icons.forEach((icon) => {
+      const seg = document.createElement("div");
+      seg.className = "seg";
+      seg.textContent = icon;
+      group.appendChild(seg);
+    });
+    bar.insertBefore(group, dot);
+  });
+};
+
+// Dims whichever row ISN'T the Touch Bar's actual current mode for the
+// frontmost app, instead of always presenting both as equally plausible.
+window.setMode = function (mode) {
+  const fKeysRow = document.getElementById("barFKeys").closest(".row");
+  const controlRow = document.getElementById("barControl").closest(".row");
+  fKeysRow.classList.toggle("dimmed", mode !== "functionKeys");
+  controlRow.classList.toggle("dimmed", mode !== "controlStrip");
+};
+
 window.onTouchPosition = function (data) {
   bars.forEach((bar) => {
     const dot = bar.querySelector(".dot");
