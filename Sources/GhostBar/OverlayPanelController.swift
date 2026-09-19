@@ -202,11 +202,18 @@ final class OverlayPanelController: NSObject {
         })
     }
 
+    // Tracks the rising edge of touch activity, so a fresh gesture
+    // re-resolves the panel's screen even if it's still visible/mid
+    // idle-hide countdown from the previous one — see revealPanel's
+    // comment for why panel.isVisible alone isn't enough for this.
+    private var wasTouchActive = false
+
     /// Must be called on the main thread.
     func sendTouch(x: Float, active: Bool) {
         if active {
-            revealPanel(hideAfter: idleHideDelay)
+            revealPanel(hideAfter: idleHideDelay, isNewGesture: !wasTouchActive)
         }
+        wasTouchActive = active
 
         let now = ProcessInfo.processInfo.systemUptime
         guard now - lastSend >= minInterval else { return }
@@ -219,16 +226,25 @@ final class OverlayPanelController: NSObject {
     /// as a text label, held a bit longer than a plain touch since it's meant
     /// to be read, not just glanced at.
     func sendAction(_ label: String) {
-        revealPanel(hideAfter: actionHideDelay)
+        // Each press is a discrete event (not a 60Hz stream like touch), so
+        // always safe/cheap to treat as its own fresh gesture.
+        revealPanel(hideAfter: actionHideDelay, isNewGesture: true)
         let escaped = label.replacingOccurrences(of: "\"", with: "\\\"")
         webView.evaluateJavaScript("window.onAction && window.onAction(\"\(escaped)\");")
     }
 
     /// Shows the panel (if hidden) and (re)schedules the idle auto-hide,
-    /// unless pinned open via the hotkey.
-    private func revealPanel(hideAfter delay: TimeInterval) {
-        if !panel.isVisible {
+    /// unless pinned open via the hotkey. `positionPanel()` used to only run
+    /// when the panel was actually hidden — but `panel.isVisible` stays true
+    /// through the whole fade-out countdown, so moving the cursor to another
+    /// screen and touching again before the fade finished kept showing the
+    /// panel wherever it already was. Now re-resolved on every fresh
+    /// gesture (isNewGesture), regardless of current visibility.
+    private func revealPanel(hideAfter delay: TimeInterval, isNewGesture: Bool) {
+        if isNewGesture {
             positionPanel()
+        }
+        if !panel.isVisible {
             fadeIn()
         }
 
