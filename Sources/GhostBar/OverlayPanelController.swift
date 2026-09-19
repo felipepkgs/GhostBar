@@ -215,18 +215,31 @@ final class OverlayPanelController: NSObject {
         webView.evaluateJavaScript("window.setMode && window.setMode(\"\(modeLiteral)\");")
     }
 
+    private struct JSONIcon: Encodable {
+        let type: String // "emoji" | "image" | "image-small"
+        let value: String
+    }
+
     private struct JSONStripItem: Encodable {
         let kind: String
-        let icons: [String]
+        let icons: [JSONIcon]
+    }
+
+    private static func encodeIcon(_ icon: ControlStripReader.Icon) -> JSONIcon {
+        switch icon {
+        case .emoji(let value): return JSONIcon(type: "emoji", value: value)
+        case .image(let filename): return JSONIcon(type: "image", value: filename)
+        case .imageSmall(let filename): return JSONIcon(type: "image-small", value: filename)
+        }
     }
 
     private static func encode(_ items: [ControlStripReader.ItemKind]) -> String? {
         let encodable: [JSONStripItem] = items.map { item in
             switch item {
             case .single(let icon):
-                return JSONStripItem(kind: "single", icons: [icon])
+                return JSONStripItem(kind: "single", icons: [encodeIcon(icon)])
             case .group(let icons):
-                return JSONStripItem(kind: "group", icons: icons)
+                return JSONStripItem(kind: "group", icons: icons.map(encodeIcon))
             case .flexibleSpace:
                 return JSONStripItem(kind: "space", icons: [])
             }

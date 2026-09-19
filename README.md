@@ -109,7 +109,8 @@ so the overlay's look and feel can be iterated on without touching Swift.
 | `TouchPositionReader.swift` | Live touch position via `MultitouchSupport.framework` |
 | `ActionKeyReader.swift` | Named system actions via `NSEvent.systemDefined` |
 | `OverlayPanelController.swift` | The floating panel (`NSVisualEffectView` glass), auto show/hide, remembered position, native → JS bridge |
-| `Resources/overlay/` | The actual UI: `index.html`, `style.css`, `app.js` |
+| `ControlStripReader.swift` | Reads the user's real Control Strip layout + Touch Bar mode via `CFPreferences` |
+| `Resources/overlay/` | The actual UI: `index.html`, `style.css`, `app.js`, `icons/` |
 | `Packaging/` | `Info.plist` + `AppIcon.icns` for the `.app` bundle |
 | `Scripts/build_app.sh` | Assembles `GhostBar.app` from a release build |
 | `Scripts/generate_icon.swift` / `.sh` | Draws `AppIcon.icns` from scratch (pill + glow dot, matching the overlay's own look) — only needs re-running if the icon design changes |
@@ -117,3 +118,8 @@ so the overlay's look and feel can be iterated on without touching Swift.
 Every private-framework symbol is resolved via `dlopen`/`dlsym` at runtime,
 never linked at build time — a missing or renamed symbol on some future
 macOS disables that one feature instead of crashing the app.
+
+## Credits
+
+Control Strip icons (`Resources/overlay/icons/`) are by [Icons8](https://icons8.com),
+used under their free license.

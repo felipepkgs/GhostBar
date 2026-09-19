@@ -20,7 +20,14 @@ window.setControlStrip = function (items) {
     item.icons.forEach((icon) => {
       const seg = document.createElement("div");
       seg.className = "seg";
-      seg.textContent = icon;
+      if (icon.type === "image" || icon.type === "image-small") {
+        const img = document.createElement("img");
+        img.className = icon.type === "image-small" ? "icon-img small" : "icon-img";
+        img.src = "icons/" + icon.value;
+        seg.appendChild(img);
+      } else {
+        seg.textContent = icon.value;
+      }
       group.appendChild(seg);
     });
     bar.insertBefore(group, dot);

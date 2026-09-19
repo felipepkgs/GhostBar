@@ -13,9 +13,20 @@ final class ControlStripReader {
     private let stripDomain = "com.apple.controlstrip" as CFString
     private let agentDomain = "com.apple.touchbar.agent" as CFString
 
+    /// Icons by Icons8 (icons8.com) for the curated identifiers below;
+    /// emoji/text for the long-tail ones that don't have a curated asset.
+    enum Icon {
+        case emoji(String)
+        case image(String) // filename under Resources/overlay/icons/
+        // Same asset as .image, rendered smaller — conveys "less" (e.g. the
+        // reduce-brightness side of a pair) without needing a dedicated
+        // graded icon, since Icons8's free set doesn't have one.
+        case imageSmall(String)
+    }
+
     enum ItemKind {
-        case single(icon: String)
-        case group(icons: [String])
+        case single(icon: Icon)
+        case group(icons: [Icon])
         case flexibleSpace
     }
 
@@ -37,34 +48,39 @@ final class ControlStripReader {
     ]
 
     // Identifier -> render info, reverse-engineered from ControlStrip.app's
-    // string table. Icons stay emoji to match the overlay's existing visual
-    // style — ponytail: swap for SF Symbol images if the overlay ever moves
-    // off inline emoji text.
+    // string table. The common/likely-visible identifiers get a curated
+    // Icons8 image (see Resources/overlay/icons/ — attribution lives in the
+    // About panel and README per Icons8's free-license terms); rarer
+    // long-tail ones fall back to emoji rather than chasing an icon for
+    // every possible identifier up front.
     private static let knownItems: [String: ItemKind] = [
-        "com.apple.system.group.brightness": .group(icons: ["🔅", "🔆"]),
-        "com.apple.system.group.keyboard-brightness": .group(icons: ["⌨−", "⌨+"]),
-        "com.apple.system.group.media": .group(icons: ["⏪", "⏯", "⏩"]),
-        "com.apple.system.group.volume": .group(icons: ["🔇", "🔉", "🔊"]),
-        "com.apple.system.mission-control": .single(icon: "🖥"),
-        "com.apple.system.launchpad": .single(icon: "▦"),
-        "com.apple.system.siri": .single(icon: "✨"),
+        // Icons8's free set has no graded sun (dim vs. bright) — same sun
+        // asset for both, just rendered smaller on the "reduce" side.
+        "com.apple.system.group.brightness": .group(icons: [.imageSmall("brightness.png"), .image("brightness.png")]),
+        "com.apple.system.group.keyboard-brightness": .group(icons: [.image("keyboard-brightness.png"), .image("keyboard-brightness.png")]),
+        "com.apple.system.group.media": .group(icons: [.image("media-rewind.png"), .image("media-play-pause.png"), .image("media-fast-forward.png")]),
+        "com.apple.system.group.volume": .group(icons: [.image("volume-mute.png"), .image("volume-down.png"), .image("volume-up.png")]),
+        "com.apple.system.mission-control": .single(icon: .image("mission-control.png")),
+        "com.apple.system.launchpad": .single(icon: .image("launchpad.png")),
+        "com.apple.system.siri": .single(icon: .image("siri.png")),
         // Not a dedicated key on every Touch Bar keyboard — some models
         // fold Esc into the Control Strip itself instead.
-        "com.apple.system.esc": .single(icon: "esc"),
-        "com.apple.system.airplay": .single(icon: "📶"),
-        "com.apple.system.dictation": .single(icon: "🎙"),
-        "com.apple.system.do-not-disturb": .single(icon: "🌙"),
-        "com.apple.system.notification-center": .single(icon: "🔔"),
-        "com.apple.system.screen-lock": .single(icon: "🔒"),
-        "com.apple.system.screen-saver": .single(icon: "🖼"),
-        "com.apple.system.screencapture": .single(icon: "📸"),
-        "com.apple.system.search": .single(icon: "🔍"),
-        "com.apple.system.show-desktop": .single(icon: "🗔"),
-        "com.apple.system.sleep": .single(icon: "🌒"),
-        "com.apple.system.workflows": .single(icon: "⚙️"),
-        "com.apple.system.night-shift": .single(icon: "🌗"),
-        "com.apple.system.handwriting": .single(icon: "✍️"),
-        "com.apple.system.input-menu": .single(icon: "🌐"),
+        "com.apple.system.esc": .single(icon: .emoji("esc")),
+        "com.apple.system.airplay": .single(icon: .image("airplay.png")),
+        "com.apple.system.dictation": .single(icon: .image("dictation.png")),
+        "com.apple.system.do-not-disturb": .single(icon: .image("do-not-disturb.png")),
+        "com.apple.system.notification-center": .single(icon: .image("notification-center.png")),
+        "com.apple.system.screen-lock": .single(icon: .image("screen-lock.png")),
+        "com.apple.system.screen-saver": .single(icon: .emoji("🖼")),
+        "com.apple.system.screencapture": .single(icon: .image("screencapture.png")),
+        // Deliberate, not a placeholder — user's pick, not meant to look like Spotlight.
+        "com.apple.system.search": .single(icon: .emoji("👾")),
+        "com.apple.system.show-desktop": .single(icon: .emoji("🗔")),
+        "com.apple.system.sleep": .single(icon: .emoji("🌒")),
+        "com.apple.system.workflows": .single(icon: .emoji("⚙️")),
+        "com.apple.system.night-shift": .single(icon: .emoji("🌗")),
+        "com.apple.system.handwriting": .single(icon: .emoji("✍️")),
+        "com.apple.system.input-menu": .single(icon: .emoji("🌐")),
         "NSTouchBarItemIdentifierFlexibleSpace": .flexibleSpace,
     ]
 

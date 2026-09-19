@@ -76,6 +76,28 @@ html, body {
   color: #fff;
 }
 
+/* Curated Icons8 assets (Resources/overlay/icons/, white ios-filled style) —
+   attribution lives in the About panel and README, not per-icon, per
+   Icons8's free-license terms. */
+.icon-img {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  opacity: 0.82;
+  transition: opacity 0.12s ease;
+}
+
+/* Same asset as its full-size sibling, just smaller — conveys "reduce"
+   (e.g. dim brightness) without a dedicated graded icon. */
+.icon-img.small {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.seg.active-seg .icon-img {
+  opacity: 1;
+}
+
 /* Control Strip: built live by app.js from the user's real customized item
    order (see ControlStripReader.swift). Each pill's width is proportional
    to its button count via flex-grow — that's an honest approximation of
@@ -99,8 +121,14 @@ html, body {
   border-right-color: rgba(255, 255, 255, 0.09);
 }
 
+/* Real NSTouchBarItemIdentifierFlexibleSpace entries read as a small gap
+   between clusters on the actual Control Strip, not another button's worth
+   of empty room — giving it the same flex weight as a button (flex: 1, the
+   first cut of this) stretched it into an oversized void. Capped and
+   under-weighted so it grows a little but never dominates. */
 .spacer {
-  flex: 1;
+  flex: 0.4;
+  max-width: 36px;
 }
 
 .dot {
