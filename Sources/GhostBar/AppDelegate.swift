@@ -1,5 +1,4 @@
 import AppKit
-import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
@@ -8,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let touchReader = TouchPositionReader.shared
     private let actionReader = ActionKeyReader()
     private let hotkeys = HotkeyManager()
+    private var preferencesWindow: SwiftUIWindowController<PreferencesView>?
+    private var onboardingWindow: SwiftUIWindowController<OnboardingView>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !isDuplicateInstanceRunning() else {
@@ -17,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         setupStatusItem()
+        showOnboardingIfNeeded()
 
         touchReader.onTouch = { [weak self] x, active in
             self?.overlay.sendTouch(x: x, active: active)
@@ -68,8 +70,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         loginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLoginItem), keyEquivalent: "")
         loginItem.target = self
-        loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        loginItem.state = LoginItem.isEnabled ? .on : .off
         menu.addItem(loginItem)
+
+        menu.addItem(.separator())
+
+        let preferencesItem = NSMenuItem(title: "Preferences…", action: #selector(showPreferences), keyEquivalent: ",")
+        preferencesItem.target = self
+        menu.addItem(preferencesItem)
 
         menu.addItem(.separator())
 
@@ -85,6 +93,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleOverlay() {
         overlay.toggle()
+    }
+
+    @objc private func showPreferences() {
+        if preferencesWindow == nil {
+            preferencesWindow = SwiftUIWindowController(
+                title: "GhostBar Preferences",
+                content: PreferencesView(overlay: overlay)
+            )
+        }
+        preferencesWindow?.show()
+    }
+
+    private func showOnboardingIfNeeded() {
+        guard !Settings.hasOnboarded else { return }
+        let controller = SwiftUIWindowController(
+            title: "Welcome",
+            content: OnboardingView { [weak self] in
+                Settings.hasOnboarded = true
+                self?.onboardingWindow?.close()
+                self?.onboardingWindow = nil
+            }
+        )
+        onboardingWindow = controller
+        controller.show()
     }
 
     /// Required placement for the Icons8 free-license attribution (Control
@@ -124,20 +156,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return others.contains { $0.localizedName == myName }
     }
 
-    /// Only takes effect when running as the bundled GhostBar.app (built via
-    /// Scripts/build_app.sh) — SMAppService needs a real app bundle identity
-    /// to register a login item against. Under `swift run` this will log an
-    /// error and no-op rather than crash.
     @objc private func toggleLoginItem() {
-        do {
-            if SMAppService.mainApp.status == .enabled {
-                try SMAppService.mainApp.unregister()
-            } else {
-                try SMAppService.mainApp.register()
-            }
-            loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        } catch {
-            NSLog("GhostBar: login item toggle failed (expected under `swift run`): \(error)")
-        }
+        LoginItem.setEnabled(!LoginItem.isEnabled)
+        loginItem.state = LoginItem.isEnabled ? .on : .off
     }
 }

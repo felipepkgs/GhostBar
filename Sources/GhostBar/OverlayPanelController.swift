@@ -10,8 +10,10 @@ final class OverlayPanelController: NSObject {
     // Hotkey toggle "pins" the panel open, overriding the idle auto-hide below.
     private var isPinned = false
     private var hideWorkItem: DispatchWorkItem?
-    private let idleHideDelay: TimeInterval = 1.5
-    private let actionHideDelay: TimeInterval = 2.5
+    // Read live from Settings (Preferences) rather than cached at init, so a
+    // change takes effect on the very next touch/action without a relaunch.
+    private var idleHideDelay: TimeInterval { Settings.idleHideDelay }
+    private var actionHideDelay: TimeInterval { Settings.actionHideDelay }
 
     private let showAnimDuration: TimeInterval = 0.22
     private let hideAnimDuration: TimeInterval = 0.28
@@ -36,11 +38,13 @@ final class OverlayPanelController: NSObject {
 
     private let stripReader = ControlStripReader()
 
+    // Sized for one row (only one is ever shown now — see setMode in app.js)
+    // plus #stack's padding; was 118 back when both rows stacked visibly at
+    // once. Preferences' "Panel size" scales this — see applyPanelSize().
+    private static let baseSize = NSSize(width: 680, height: 82)
+
     override init() {
-        // Sized for one row (only one is ever shown now — see setMode in
-        // app.js) plus #stack's padding; was 118 back when both rows
-        // stacked visibly at once.
-        let barSize = NSRect(x: 0, y: 0, width: 680, height: 82)
+        let barSize = NSRect(origin: .zero, size: Self.baseSize)
 
         // A real NSVisualEffectView gives the panel genuine macOS frosted
         // glass reading the desktop behind it — CSS backdrop-filter alone
@@ -135,6 +139,8 @@ final class OverlayPanelController: NSObject {
     /// honored when it lands on THAT resolved screen, so dragging on one
     /// monitor can't freeze the panel there once the cursor moves to another.
     private func positionPanel() {
+        applyPanelSize()
+
         guard let screen = cursorScreen() ?? builtInScreen() ?? NSScreen.main else { return }
         currentScreen = screen
 
@@ -154,6 +160,23 @@ final class OverlayPanelController: NSObject {
         let x = frame.midX - panel.frame.width / 2
         let y = frame.minY + 60
         setPanelOrigin(NSPoint(x: x, y: y))
+    }
+
+    /// Applies Preferences' panel-size scale, resized around the panel's
+    /// current center — positionPanel() re-derives the real origin right
+    /// after this runs anyway, so keeping the center is just a reasonable
+    /// starting point, not the final placement. contentView (the glass) and
+    /// the web view both auto-resize to match via their autoresizing masks.
+    private func applyPanelSize() {
+        let scale = CGFloat(Settings.panelScale)
+        let newSize = NSSize(width: Self.baseSize.width * scale, height: Self.baseSize.height * scale)
+        guard panel.frame.size != newSize else { return }
+
+        let old = panel.frame
+        let newOrigin = NSPoint(x: old.midX - newSize.width / 2, y: old.midY - newSize.height / 2)
+        isRepositioningProgrammatically = true
+        panel.setFrame(NSRect(origin: newOrigin, size: newSize), display: true)
+        isRepositioningProgrammatically = false
     }
 
     /// Re-resolves the cursor's screen and repositions only if it actually
@@ -197,10 +220,11 @@ final class OverlayPanelController: NSObject {
         refreshLiveLayout()
         panel.alphaValue = 0
         panel.orderFrontRegardless()
+        let restingAlpha = CGFloat(Settings.panelOpacity)
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = showAnimDuration
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().alphaValue = 1
+            panel.animator().alphaValue = restingAlpha
         }
     }
 
@@ -214,6 +238,26 @@ final class OverlayPanelController: NSObject {
             self.panel.orderOut(nil)
             self.panel.alphaValue = 1
         })
+    }
+
+    /// Preferences' "Reset Position" — forgets any manually dragged spot and
+    /// re-centers on the cursor's current screen.
+    func resetPosition() {
+        UserDefaults.standard.removeObject(forKey: Self.originDefaultsKey)
+        positionPanel()
+    }
+
+    /// Preferences' "Preview" — shows the panel with whatever draft
+    /// size/opacity/hide-delay is currently set, without needing the
+    /// physical Touch Bar. Forces a fresh fadeIn even if already visible, so
+    /// a changed setting is actually reflected rather than silently no-op'd
+    /// by fadeIn's `!panel.isVisible` guard.
+    func preview() {
+        if panel.isVisible {
+            panel.orderOut(nil)
+            panel.alphaValue = 1
+        }
+        revealPanel(hideAfter: 3.0)
     }
 
     /// Must be called on the main thread.
