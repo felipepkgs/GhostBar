@@ -17,6 +17,14 @@ final class OverlayPanelController: NSObject {
     // either ordering, instead of assuming one.
     private var lastActionWithOwnSoundTime: TimeInterval = 0
     private static let actionsWithOwnSound: Set<String> = ["Volume Up", "Volume Down", "Mute"]
+    // Debounced at schedule time, not play time: a burst of fast taps each
+    // hit the touch-down edge, and scheduling a delayed play for every one
+    // of them stacked up overlapping/trailing sounds well after the burst
+    // ended. Ignoring touch-downs that land within this window of the last
+    // SCHEDULED one means only the first tap of a burst ever queues a
+    // sound — nothing left to fire late.
+    private var lastTouchSoundScheduledTime: TimeInterval = 0
+    private let touchSoundDebounceInterval: TimeInterval = 0.35
 
     // Hotkey toggle "pins" the panel open, overriding the idle auto-hide below.
     // private(set), not fully private — AppDelegate's menu checkmark needs
@@ -341,16 +349,22 @@ final class OverlayPanelController: NSObject {
             revealPanel(hideAfter: idleHideDelay)
             // Edge-triggered (fires once per touch-down, not every tick a
             // finger stays down) — Settings.playTouchSound is off by
-            // default, see its own comment for why. A short delay before
-            // actually playing, re-checking lastActionWithOwnSoundTime at
-            // fire time, covers a volume action landing either just before
-            // or during this window (see that property's comment).
+            // default, see its own comment for why. Debounced (see
+            // lastTouchSoundScheduledTime's comment) so a burst of fast taps
+            // plays one sound, not one per tap piling up. The short delay
+            // before actually playing, re-checking lastActionWithOwnSoundTime
+            // at fire time, covers a volume action landing either just
+            // before or during this window (see that property's comment).
             if !wasTouchActive && Settings.playTouchSound {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
-                    guard let self else { return }
-                    let sinceOwnSoundAction = ProcessInfo.processInfo.systemUptime - self.lastActionWithOwnSoundTime
-                    guard sinceOwnSoundAction > 0.3 else { return }
-                    NSSound(named: "Tink")?.play()
+                let now = ProcessInfo.processInfo.systemUptime
+                if now - lastTouchSoundScheduledTime >= touchSoundDebounceInterval {
+                    lastTouchSoundScheduledTime = now
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
+                        guard let self else { return }
+                        let sinceOwnSoundAction = ProcessInfo.processInfo.systemUptime - self.lastActionWithOwnSoundTime
+                        guard sinceOwnSoundAction > 0.3 else { return }
+                        NSSound(named: "Tink")?.play()
+                    }
                 }
             }
         }
