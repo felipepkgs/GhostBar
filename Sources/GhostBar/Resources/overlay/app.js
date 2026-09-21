@@ -49,23 +49,93 @@ window.setTheme = function (theme) {
   document.body.dataset.theme = theme;
 };
 
+// Preferences' "Touch Feedback" section — style picker, "Flash touched
+// segment" toggle, and the feedback color. Pushed on every show (see
+// OverlayPanelController.refreshLiveLayout) and live while Preview is open
+// (see defaultsChanged), same pattern as setTheme.
+let touchFeedbackStyle = "none";
+let flashTouchedSegmentEnabled = false;
+window.setTouchFeedback = function (style, flashSegmentEnabled, colorHex) {
+  touchFeedbackStyle = style || "none";
+  flashTouchedSegmentEnabled = !!flashSegmentEnabled;
+  if (colorHex) document.documentElement.style.setProperty("--touch-feedback-color", colorHex);
+};
+
+let wasTouchActive = false;
+
 window.onTouchPosition = function (data) {
+  const active = !!(data && data.active);
+  const justTouchedDown = active && !wasTouchActive;
+  wasTouchActive = active;
+
   bars.forEach((bar) => {
     const dot = bar.querySelector(".dot");
-    if (!data || !data.active) {
+    if (!active) {
       dot.style.opacity = "0";
       clearActiveSeg(bar);
       return;
     }
     dot.style.opacity = "1";
     dot.style.left = (data.x * 100) + "%";
-    highlightSeg(bar, data.x);
+    const matchedSeg = highlightSeg(bar, data.x);
+    if (justTouchedDown) {
+      spawnTouchFx(bar, data.x);
+      if (flashTouchedSegmentEnabled && matchedSeg) flashSegment(matchedSeg);
+    }
   });
 };
 
+// Fires once per touch-down (see justTouchedDown above), not continuously —
+// these are one-shot transients, not something that tracks the finger.
+// press-bounce animates .dot itself instead of spawning an element; sonar
+// spawns three staggered rings (see style.css's .fx-sonar-N delays);
+// everything else spawns one .touch-fx element, self-removing via
+// animationend so the DOM doesn't accumulate stale nodes across taps.
+function spawnTouchFx(bar, fraction) {
+  if (touchFeedbackStyle === "none") return;
+  const dot = bar.querySelector(".dot");
+
+  if (touchFeedbackStyle === "pressBounce") {
+    dot.classList.remove("fx-press-bounce");
+    void dot.offsetWidth; // restart the animation on a re-tap before the last one finished
+    dot.classList.add("fx-press-bounce");
+    return;
+  }
+
+  const leftPct = fraction * 100;
+
+  if (touchFeedbackStyle === "sonar") {
+    [1, 2, 3].forEach((i) => {
+      const el = document.createElement("div");
+      el.className = "touch-fx fx-sonar fx-sonar-" + i;
+      el.style.left = leftPct + "%";
+      bar.appendChild(el);
+      el.addEventListener("animationend", () => el.remove());
+    });
+    return;
+  }
+
+  const classMap = { ripple: "fx-ripple", radialFill: "fx-radial-fill", flashBurst: "fx-flash-burst" };
+  const cls = classMap[touchFeedbackStyle];
+  if (!cls) return;
+  const el = document.createElement("div");
+  el.className = "touch-fx " + cls;
+  el.style.left = leftPct + "%";
+  bar.appendChild(el);
+  el.addEventListener("animationend", () => el.remove());
+}
+
+function flashSegment(seg) {
+  seg.classList.remove("seg-flash");
+  void seg.offsetWidth;
+  seg.classList.add("seg-flash");
+  seg.addEventListener("animationend", () => seg.classList.remove("seg-flash"), { once: true });
+}
+
 // Lights up whichever segment the dot currently sits over, on both rows at
 // once — cheap "touch feedback" that goes a long way toward feeling like a
-// real display instead of a static reference chart.
+// real display instead of a static reference chart. Returns the matched
+// segment (or null) so callers can layer the one-shot flash effect on it.
 function highlightSeg(bar, fraction) {
   const rect = bar.getBoundingClientRect();
   const pointerX = rect.left + fraction * rect.width;
@@ -78,6 +148,7 @@ function highlightSeg(bar, fraction) {
     if (seg !== match) seg.classList.remove("active-seg");
   });
   if (match) match.classList.add("active-seg");
+  return match;
 }
 
 // Answers "is this touch position over Volume Up/Down/Mute" — those have

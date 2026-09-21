@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct PreferencesView: View {
@@ -10,12 +11,26 @@ struct PreferencesView: View {
     @AppStorage(SettingsKey.panelOpacity) private var panelOpacity = 1.0
     @AppStorage(SettingsKey.panelTheme) private var panelThemeRaw = PanelTheme.vapor.rawValue
     @AppStorage(SettingsKey.playTouchSound) private var playTouchSound = false
+    @AppStorage(SettingsKey.touchFeedbackStyle) private var touchFeedbackStyleRaw = TouchFeedbackStyle.none.rawValue
+    @AppStorage(SettingsKey.flashTouchedSegment) private var flashTouchedSegment = false
+    @AppStorage(SettingsKey.touchFeedbackColorHex) private var touchFeedbackColorHex = "#FFFFFF"
 
     // See OnboardingView's comment: @State's macro plugin isn't resolvable
     // in this CommandLineTools-only SPM build, so this binds straight to
     // SMAppService's live status instead of caching it locally.
     private var loginItemOn: Binding<Bool> {
         Binding(get: { LoginItem.isEnabled }, set: { LoginItem.setEnabled($0) })
+    }
+
+    // ColorPicker needs a Color binding, but @AppStorage only stores
+    // primitives — stored as a hex string instead (also what's pushed to
+    // the overlay's CSS custom property, see OverlayPanelController), with
+    // this as the SwiftUI-facing view onto it.
+    private var touchFeedbackColor: Binding<Color> {
+        Binding(
+            get: { Color(hex: touchFeedbackColorHex) },
+            set: { touchFeedbackColorHex = $0.hexString }
+        )
     }
 
     var body: some View {
@@ -28,6 +43,16 @@ struct PreferencesView: View {
                     String(format: "%.1fs", $0)
                 }
                 Toggle("Play sound on touch", isOn: $playTouchSound)
+            }
+
+            Section("Touch Feedback") {
+                Picker("Style", selection: $touchFeedbackStyleRaw) {
+                    ForEach(TouchFeedbackStyle.allCases) { style in
+                        Text(style.displayName).tag(style.rawValue)
+                    }
+                }
+                Toggle("Flash touched segment", isOn: $flashTouchedSegment)
+                ColorPicker("Color", selection: touchFeedbackColor, supportsOpacity: false)
             }
 
             Section("Appearance") {
@@ -63,6 +88,34 @@ struct PreferencesView: View {
         }
         .padding(20)
         .frame(width: 340)
+    }
+}
+
+// @AppStorage only stores primitives, and the color needs to travel to the
+// overlay's CSS as a hex string anyway (see OverlayPanelController), so
+// hex is the one representation used everywhere instead of converting
+// back and forth between it and some other format.
+private extension Color {
+    init(hex: String) {
+        var sanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        sanitized.removeAll { $0 == "#" }
+        var rgb: UInt64 = 0
+        Scanner(string: sanitized).scanHexInt64(&rgb)
+        self.init(
+            red: Double((rgb & 0xFF0000) >> 16) / 255,
+            green: Double((rgb & 0x00FF00) >> 8) / 255,
+            blue: Double(rgb & 0x0000FF) / 255
+        )
+    }
+
+    var hexString: String {
+        let color = NSColor(self).usingColorSpace(.deviceRGB) ?? NSColor(self)
+        return String(
+            format: "#%02X%02X%02X",
+            Int(round(color.redComponent * 255)),
+            Int(round(color.greenComponent * 255)),
+            Int(round(color.blueComponent * 255))
+        )
     }
 }
 

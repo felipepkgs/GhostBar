@@ -174,6 +174,19 @@ final class OverlayPanelController: NSObject {
         applyPanelSize()
         panel.alphaValue = CGFloat(Settings.panelOpacity)
         webView.evaluateJavaScript("window.setTheme && window.setTheme(\"\(Settings.panelTheme.rawValue)\");")
+        pushTouchFeedbackSettings()
+    }
+
+    /// Preferences > Touch Feedback's style/segment-flash/color — pushed
+    /// here (called from both refreshLiveLayout, before every show, and
+    /// defaultsChanged, for live Preview updates) rather than folded into
+    /// refreshLiveLayout itself, since defaultsChanged doesn't need the
+    /// Control Strip/mode re-fetch that function also does.
+    private func pushTouchFeedbackSettings() {
+        let style = Settings.touchFeedbackStyle.rawValue
+        let flashSegment = Settings.flashTouchedSegment
+        let colorHex = Settings.touchFeedbackColorHex
+        webView.evaluateJavaScript("window.setTouchFeedback && window.setTouchFeedback(\"\(style)\", \(flashSegment), \"\(colorHex)\");")
     }
 
     private func loadOverlay() {
@@ -438,6 +451,7 @@ final class OverlayPanelController: NSObject {
         webView.evaluateJavaScript("window.setMode && window.setMode(\"\(modeLiteral)\");")
 
         webView.evaluateJavaScript("window.setTheme && window.setTheme(\"\(Settings.panelTheme.rawValue)\");")
+        pushTouchFeedbackSettings()
     }
 
     private struct JSONIcon: Encodable {

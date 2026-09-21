@@ -13,6 +13,9 @@ enum SettingsKey {
     static let hotkeyModifiers = "GhostBar.hotkeyModifiers"
     static let panelTheme = "GhostBar.panelTheme"
     static let playTouchSound = "GhostBar.playTouchSound"
+    static let touchFeedbackStyle = "GhostBar.touchFeedbackStyle"
+    static let flashTouchedSegment = "GhostBar.flashTouchedSegment"
+    static let touchFeedbackColorHex = "GhostBar.touchFeedbackColorHex"
 }
 
 /// Read-side for OverlayPanelController. Defaults are inlined here rather
@@ -67,5 +70,24 @@ enum Settings {
     // hardware never made in the first place.
     static var playTouchSound: Bool {
         UserDefaults.standard.bool(forKey: SettingsKey.playTouchSound)
+    }
+
+    // .none by default — same reasoning as playTouchSound: additive, opt-in
+    // polish, not a default-on behavior change to an already-shipped panel.
+    static var touchFeedbackStyle: TouchFeedbackStyle {
+        TouchFeedbackStyle(rawValue: UserDefaults.standard.string(forKey: SettingsKey.touchFeedbackStyle) ?? "") ?? .none
+    }
+
+    static var flashTouchedSegment: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.flashTouchedSegment)
+    }
+
+    // White by default — unlike the dot itself, these are brand-new visual
+    // elements with no per-theme identity yet (see style.css's
+    // --touch-feedback-color comment), so a neutral color that reads
+    // reasonably against all 8 themes is the safer default over picking
+    // one theme's own accent.
+    static var touchFeedbackColorHex: String {
+        UserDefaults.standard.string(forKey: SettingsKey.touchFeedbackColorHex) ?? "#FFFFFF"
     }
 }
