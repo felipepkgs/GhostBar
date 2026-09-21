@@ -80,6 +80,31 @@ function highlightSeg(bar, fraction) {
   if (match) match.classList.add("active-seg");
 }
 
+// Answers "is this touch position over Volume Up/Down/Mute" — those have
+// their own system sound when pressed, so Swift's touch-sound feature (see
+// OverlayPanelController.maybeScheduleTouchSound) skips playing on top of
+// it. Deterministic instead of guessing from event timing (tried that
+// three times, on the Swift side, racing sendAction's arrival against a
+// fixed delay — never reliably worked, since it depends on how long the OS
+// itself takes to report the action back, which varies). This runs the
+// exact same hit-test highlightSeg already uses for the visible highlight,
+// against whichever row is actually showing, then checks the matched
+// segment's own icon filename — volume-up.png/volume-down.png/
+// volume-mute.png all contain "volume".
+window.isTouchOverOwnSoundControl = function (fraction) {
+  const activeBar = document.querySelector(".row:not(.hidden) .bar");
+  if (!activeBar) return false;
+  const rect = activeBar.getBoundingClientRect();
+  const pointerX = rect.left + fraction * rect.width;
+  let match = null;
+  activeBar.querySelectorAll(".seg").forEach((seg) => {
+    const segRect = seg.getBoundingClientRect();
+    if (pointerX >= segRect.left && pointerX <= segRect.right) match = seg;
+  });
+  const img = match && match.querySelector(".icon-img");
+  return !!(img && /volume/i.test(img.getAttribute("src") || ""));
+};
+
 function clearActiveSeg(bar) {
   bar.querySelectorAll(".seg.active-seg").forEach((seg) => seg.classList.remove("active-seg"));
 }

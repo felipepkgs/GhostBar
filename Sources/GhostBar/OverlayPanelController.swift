@@ -1,4 +1,5 @@
 import AppKit
+import AudioToolbox
 import WebKit
 
 final class OverlayPanelController: NSObject {
@@ -8,15 +9,29 @@ final class OverlayPanelController: NSObject {
     private var lastSend: TimeInterval = 0
     private let minInterval: TimeInterval = 1.0 / 60.0 // caps evaluateJavaScript rate
     private var wasTouchActive = false
-    // Touch position (sendTouch) and recognized system actions (sendAction)
-    // are two independent, unordered signals off two different underlying
-    // event streams (the digitizer vs NSEvent.systemDefined) — a volume
-    // press's action callback isn't guaranteed to land before or after its
-    // touch-down. Tracking "when did a with-its-own-sound action last fire"
-    // and checking it from a short delay on touch-down (below) handles
-    // either ordering, instead of assuming one.
-    private var lastActionWithOwnSoundTime: TimeInterval = 0
-    private static let actionsWithOwnSound: Set<String> = ["Volume Up", "Volume Down", "Mute"]
+    // Debounced at schedule time, not play time: a burst of fast taps each
+    // hit the touch-down edge, and scheduling a delayed play for every one
+    // of them stacked up overlapping/trailing sounds well after the burst
+    // ended. Ignoring touch-downs that land within this window of the last
+    // SCHEDULED one means only the first tap of a burst ever queues a
+    // sound — nothing left to fire late.
+    private var lastTouchSoundScheduledTime: TimeInterval = 0
+    private let touchSoundDebounceInterval: TimeInterval = 0.12
+    // NSSound(named: "Tink") routes through AppKit's shared, alert-oriented
+    // named-sound playback path, which serializes: a second call while the
+    // first is still finishing gets silently dropped/queued rather than
+    // overlapping — confirmed the hard way (a ~1s gap between plays no
+    // matter how short the debounce window above was). AudioServicesPlay-
+    // SystemSound is the actual API macOS itself uses for rapid, repeated
+    // UI feedback (keyboard clicks and the like) — fire-and-forget, no
+    // shared lock. Loaded from the same system Tink.aiff once and reused
+    // via a lazily-created static SystemSoundID.
+    private static let tinkSoundID: SystemSoundID = {
+        var soundID: SystemSoundID = 0
+        let url = URL(fileURLWithPath: "/System/Library/Sounds/Tink.aiff")
+        AudioServicesCreateSystemSoundID(url as CFURL, &soundID)
+        return soundID
+    }()
 
     // Hotkey toggle "pins" the panel open, overriding the idle auto-hide below.
     // private(set), not fully private — AppDelegate's menu checkmark needs
@@ -341,17 +356,12 @@ final class OverlayPanelController: NSObject {
             revealPanel(hideAfter: idleHideDelay)
             // Edge-triggered (fires once per touch-down, not every tick a
             // finger stays down) — Settings.playTouchSound is off by
-            // default, see its own comment for why. A short delay before
-            // actually playing, re-checking lastActionWithOwnSoundTime at
-            // fire time, covers a volume action landing either just before
-            // or during this window (see that property's comment).
-            if !wasTouchActive && Settings.playTouchSound {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
-                    guard let self else { return }
-                    let sinceOwnSoundAction = ProcessInfo.processInfo.systemUptime - self.lastActionWithOwnSoundTime
-                    guard sinceOwnSoundAction > 0.3 else { return }
-                    NSSound(named: "Tink")?.play()
-                }
+            // default, see its own comment for why. See
+            // maybeScheduleTouchSound for how it decides whether this
+            // position is a volume/mute control that already has its own
+            // system sound.
+            if !wasTouchActive {
+                maybeScheduleTouchSound(x: x)
             }
         }
         wasTouchActive = active
@@ -363,13 +373,30 @@ final class OverlayPanelController: NSObject {
         webView.evaluateJavaScript(js)
     }
 
+    /// Debounced (see lastTouchSoundScheduledTime's comment) so a burst of
+    /// fast taps plays one sound, not one per tap piling up. Whether to
+    /// suppress for landing on Volume Up/Down/Mute (which have their own
+    /// system sound) is answered by app.js's isTouchOverOwnSoundControl —
+    /// a position-based hit-test against the actual rendered Control Strip,
+    /// not a guess from event timing. Three different timing-race attempts
+    /// (racing sendAction's arrival against a fixed delay from touch-down,
+    /// then from touch-up) never reliably worked; this doesn't race
+    /// anything; the delay here is only WKWebView's own JS round-trip.
+    private func maybeScheduleTouchSound(x: Float) {
+        guard Settings.playTouchSound else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastTouchSoundScheduledTime >= touchSoundDebounceInterval else { return }
+        lastTouchSoundScheduledTime = now
+        webView.evaluateJavaScript("window.isTouchOverOwnSoundControl && window.isTouchOverOwnSoundControl(\(x));") { result, _ in
+            guard (result as? Bool) != true else { return }
+            AudioServicesPlaySystemSound(Self.tinkSoundID)
+        }
+    }
+
     /// A recognized brightness/volume/media-style action was pressed. Shown
     /// as a text label, held a bit longer than a plain touch since it's meant
     /// to be read, not just glanced at.
     func sendAction(_ label: String) {
-        if Self.actionsWithOwnSound.contains(label) {
-            lastActionWithOwnSoundTime = ProcessInfo.processInfo.systemUptime
-        }
         repositionIfScreenChanged()
         revealPanel(hideAfter: actionHideDelay)
         let escaped = label.replacingOccurrences(of: "\"", with: "\\\"")
