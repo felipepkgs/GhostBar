@@ -37,7 +37,8 @@ right now and what your real Control Strip layout is.
   illumination presses.
 - **Auto show/hide with a memory** — appears on touch, fades ~1.5s after you
   lift your finger, and reopens wherever you last dragged it.
-- **Five selectable themes** — see [Themes](docs/themes.md).
+- **Selectable themes**, including three material finishes (Gold, Silver,
+  Carbon Fiber) — see [Themes](docs/themes.md).
 - **Global hotkey** (`⌃⌥⌘T` by default, rebindable) to pin the panel open.
 - **Preferences** for hide delays, panel size/opacity, theme, position reset,
   and the hotkey — all applied live, no relaunch needed.

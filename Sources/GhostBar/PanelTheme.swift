@@ -16,6 +16,11 @@ import AppKit
 /// weight/case/spacing instead of family.
 enum PanelTheme: String, CaseIterable, Identifiable {
     case vapor, meniscus, ulm, instrument, unibody
+    // Material finishes on Vapor's own glass shape (same silhouette/blur
+    // language) rather than new silhouettes of their own — see style.css's
+    // comment above the "Vapor materials" block for why they don't get
+    // their own cornerRadius/border treatment either.
+    case vaporGold, vaporSilver, vaporCarbon
 
     var id: String { rawValue }
 
@@ -26,6 +31,9 @@ enum PanelTheme: String, CaseIterable, Identifiable {
         case .ulm: "Ulm"
         case .instrument: "Instrument"
         case .unibody: "Unibody"
+        case .vaporGold: "Vapor — Gold"
+        case .vaporSilver: "Vapor — Silver"
+        case .vaporCarbon: "Vapor — Carbon Fiber"
         }
     }
 
@@ -34,7 +42,7 @@ enum PanelTheme: String, CaseIterable, Identifiable {
     /// clipped by this layer, not by anything the page draws.
     var cornerRadius: CGFloat {
         switch self {
-        case .vapor: 22
+        case .vapor, .vaporGold, .vaporSilver, .vaporCarbon: 22
         case .meniscus: 32
         case .ulm: 4
         case .instrument: 10
@@ -49,6 +57,9 @@ enum PanelTheme: String, CaseIterable, Identifiable {
         case .ulm: NSColor(white: 0, alpha: 0.16)
         case .instrument: NSColor(white: 0, alpha: 0.10)
         case .unibody: NSColor(white: 1, alpha: 0.08)
+        case .vaporGold: NSColor(calibratedRed: 0.96, green: 0.82, blue: 0.51, alpha: 0.22)
+        case .vaporSilver: NSColor(white: 0.87, alpha: 0.20)
+        case .vaporCarbon: NSColor(white: 0, alpha: 0.4)
         }
     }
 }
