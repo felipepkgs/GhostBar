@@ -130,7 +130,7 @@ final class OverlayPanelController: NSObject {
     }
 
     private func loadOverlay() {
-        guard let url = Bundle.module.url(forResource: "index", withExtension: "html", subdirectory: "overlay") else {
+        guard let url = GhostBarResources.url(forResource: "index", withExtension: "html", subdirectory: "overlay") else {
             NSLog("GhostBar: overlay resources missing from bundle")
             return
         }
