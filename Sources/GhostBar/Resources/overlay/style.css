@@ -375,3 +375,10 @@ body[data-theme="vaporCarbon"] .dot {
   50%      { box-shadow: 0 0 0 7px rgba(200, 30, 58, 0.10), 0 0 20px 4px rgba(200, 30, 58, 0.85); }
 }
 body[data-theme="vaporCarbon"] #action .pill { background: rgba(20, 10, 12, 0.6); box-shadow: inset 0 0 0 1px rgba(200, 30, 58, 0.25), 0 8px 20px rgba(0, 0, 0, 0.4); }
+
+/* Siri's icon (icons/siri.png) is Icons8's colorful "Apple Intelligence"
+   gradient glyph, not a flat white ios-filled one like its siblings —
+   real Control Center now shows Siri this way too. !important + placed
+   last so no theme's invert/brightness/hue-rotate filter (set above, for
+   recoloring the flat white icons on light/tinted themes) touches it. */
+.icon-img[src*="siri"] { filter: none !important; opacity: 1 !important; }
