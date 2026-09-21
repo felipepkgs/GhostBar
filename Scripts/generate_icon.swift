@@ -1,13 +1,22 @@
 #!/usr/bin/env swift
-// Draws the GhostBar app icon (the same Icons8 "Glyph Neue" ghost glyph as
-// the menu bar icon, on the overlay's dark glass gradient) and exports every
-// size iconutil needs for an .icns. Run via Scripts/generate_icon.sh, not
-// directly — that script also invokes iconutil afterwards.
+// Draws the GhostBar app icon (same ghost silhouette as the menu bar icon,
+// on the overlay's dark glass gradient) and exports every size iconutil
+// needs for an .icns. Run via Scripts/generate_icon.sh, not directly — that
+// script also invokes iconutil afterwards.
 //
 // Previously a pill+glow-dot motif unrelated to the menu bar icon — Finder/
 // Dock/Raycast/Spotlight all showed a different "app identity" than the
-// status bar glyph. Source ghost at assets/ghost-source.png (Icons8
-// glyph-neue, 800px, white) — see README's Credits section.
+// status bar glyph. Then briefly the same thin-OUTLINE glyph as the menu
+// bar (assets/ghost-source.png, Icons8 "glyph-neue") — looked right at
+// 512px, but that outline's fine strokes turn into an illegible smudge at
+// the 16-32px Raycast/Spotlight actually render (a thin stroke anti-aliases
+// away long before a filled shape does). assets/ghost-source-filled.png
+// (Icons8 "ios-filled", same ghost pose, solid) is what's actually used for
+// the icns now — recolored white below since Icons8 ships it black. The
+// menu bar glyph stays on the outline version; it's template-rendered at a
+// fixed small size against a neutral bar, not competing with a bold Dock/
+// Raycast icon grid, and already looked right there.
+// See README's Credits section for attribution.
 
 import AppKit
 
@@ -16,9 +25,23 @@ let outDir = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 try? FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 
 let scriptDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-guard let ghost = NSImage(contentsOf: scriptDir.appendingPathComponent("assets/ghost-source.png")) else {
-    fatalError("assets/ghost-source.png missing")
+guard let rawGhost = NSImage(contentsOf: scriptDir.appendingPathComponent("assets/ghost-source-filled.png")) else {
+    fatalError("assets/ghost-source-filled.png missing")
 }
+
+// Icons8's filled ghost is solid black — recolor to white (sourceAtop over
+// the shape's own alpha) so it reads against the dark gradient background.
+func whiteRecolored(_ image: NSImage) -> NSImage {
+    let recolored = NSImage(size: image.size)
+    recolored.lockFocus()
+    let rect = NSRect(origin: .zero, size: image.size)
+    image.draw(in: rect)
+    NSColor.white.setFill()
+    rect.fill(using: .sourceAtop)
+    recolored.unlockFocus()
+    return recolored
+}
+let ghost = whiteRecolored(rawGhost)
 
 func makeMaster() -> NSImage {
     let size = NSSize(width: masterSize, height: masterSize)
