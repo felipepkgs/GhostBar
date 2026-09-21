@@ -68,7 +68,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             icon.isTemplate = true
             icon.size = NSSize(width: 18, height: 18)
             icon.accessibilityDescription = "GhostBar"
-            statusItem.button?.image = icon
+            // Dimmed at a glance when the digitizer isn't there, instead of
+            // only being visible after opening the menu (see the
+            // "⚠️ Touch Bar not detected" item below, which still carries
+            // the actual reason).
+            statusItem.button?.image = touchReader.unavailableReason == nil ? icon : Self.dimmed(icon)
         } else {
             NSLog("GhostBar: status bar icon missing from bundle")
         }
@@ -116,13 +120,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(aboutItem)
 
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        let quitItem = NSMenuItem(title: "Quit", action: #selector(quitWithConfirmation), keyEquivalent: "q")
+        quitItem.target = self
+        menu.addItem(quitItem)
 
         statusItem.menu = menu
     }
 
     @objc private func toggleOverlay() {
         overlay.toggle()
+    }
+
+    /// Half-opacity copy of a template image — AppKit still tints it
+    /// correctly for light/dark menu bars, just fainter.
+    private static func dimmed(_ image: NSImage) -> NSImage {
+        let dimmed = NSImage(size: image.size)
+        dimmed.isTemplate = true
+        dimmed.lockFocus()
+        image.draw(in: NSRect(origin: .zero, size: image.size), from: .zero, operation: .sourceOver, fraction: 0.35)
+        dimmed.unlockFocus()
+        return dimmed
     }
 
     /// Keeps the toggle item's hotkey label current (it's rebindable via
@@ -223,6 +240,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ))
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// A stray ⌘Q (this app has no window to catch it first, unlike a
+    /// regular document app) used to quit instantly with no way back short
+    /// of relaunching — cheap enough to guard against that nothing here
+    /// risks the "one click too many, no undo" the confirmation actually
+    /// matters for.
+    @objc private func quitWithConfirmation() {
+        let alert = NSAlert()
+        alert.messageText = "Quit GhostBar?"
+        alert.informativeText = "The overlay will stop showing Touch Bar touches until you relaunch it."
+        alert.addButton(withTitle: "Quit")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSApp.terminate(nil)
+        }
     }
 
     @objc private func toggleLoginItem() {
