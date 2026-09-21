@@ -7,6 +7,7 @@ final class OverlayPanelController: NSObject {
     private let webView: WKWebView
     private var lastSend: TimeInterval = 0
     private let minInterval: TimeInterval = 1.0 / 60.0 // caps evaluateJavaScript rate
+    private var wasTouchActive = false
 
     // Hotkey toggle "pins" the panel open, overriding the idle auto-hide below.
     // private(set), not fully private — AppDelegate's menu checkmark needs
@@ -306,7 +307,14 @@ final class OverlayPanelController: NSObject {
         if active {
             repositionIfScreenChanged()
             revealPanel(hideAfter: idleHideDelay)
+            // Edge-triggered (fires once per touch-down, not every tick a
+            // finger stays down) — Settings.playTouchSound is off by
+            // default, see its own comment for why.
+            if !wasTouchActive && Settings.playTouchSound {
+                NSSound(named: "Tink")?.play()
+            }
         }
+        wasTouchActive = active
 
         let now = ProcessInfo.processInfo.systemUptime
         guard now - lastSend >= minInterval else { return }

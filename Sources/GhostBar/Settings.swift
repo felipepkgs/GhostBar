@@ -12,6 +12,7 @@ enum SettingsKey {
     static let hotkeyKeyCode = "GhostBar.hotkeyKeyCode"
     static let hotkeyModifiers = "GhostBar.hotkeyModifiers"
     static let panelTheme = "GhostBar.panelTheme"
+    static let playTouchSound = "GhostBar.playTouchSound"
 }
 
 /// Read-side for OverlayPanelController. Defaults are inlined here rather
@@ -59,5 +60,12 @@ enum Settings {
 
     static var panelTheme: PanelTheme {
         PanelTheme(rawValue: UserDefaults.standard.string(forKey: SettingsKey.panelTheme) ?? "") ?? .vapor
+    }
+
+    // Off by default — the whole point of the dot/panel is a silent,
+    // glanceable substitute for the dead display, not an added sound this
+    // hardware never made in the first place.
+    static var playTouchSound: Bool {
+        UserDefaults.standard.bool(forKey: SettingsKey.playTouchSound)
     }
 }

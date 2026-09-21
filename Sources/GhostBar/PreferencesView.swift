@@ -9,6 +9,7 @@ struct PreferencesView: View {
     @AppStorage(SettingsKey.panelScale) private var panelScale = 1.0
     @AppStorage(SettingsKey.panelOpacity) private var panelOpacity = 1.0
     @AppStorage(SettingsKey.panelTheme) private var panelThemeRaw = PanelTheme.vapor.rawValue
+    @AppStorage(SettingsKey.playTouchSound) private var playTouchSound = false
 
     // See OnboardingView's comment: @State's macro plugin isn't resolvable
     // in this CommandLineTools-only SPM build, so this binds straight to
@@ -26,6 +27,7 @@ struct PreferencesView: View {
                 LabeledSlider(label: "Hide after action", value: $actionHideDelay, range: 0.5...5) {
                     String(format: "%.1fs", $0)
                 }
+                Toggle("Play sound on touch", isOn: $playTouchSound)
             }
 
             Section("Appearance") {
