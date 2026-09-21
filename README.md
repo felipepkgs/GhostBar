@@ -4,6 +4,8 @@
 
 > The Touch Bar, on the screen you're already looking at.
 
+**[felipepkgs.github.io/GhostBar →](https://felipepkgs.github.io/GhostBar/)**
+
 GhostBar shows your Touch Bar's live touch position, real Control Strip
 layout, and action feedback right on your screen — so you never have to
 glance down to know what's under your finger.
