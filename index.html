@@ -282,6 +282,7 @@
     <a class="btn btn-ghost" href="https://github.com/felipepkgs/GhostBar">View on GitHub</a>
   </div>
   <div class="install-block"><span class="muted"># </span>brew tap felipepkgs/ghostbar
+brew trust --tap felipepkgs/ghostbar
 brew install --cask ghostbar</div>
 </header>
 
@@ -368,9 +369,11 @@ brew install --cask ghostbar</div>
     <p>Ad-hoc signed, not Developer-ID notarized — the cask clears the Gatekeeper quarantine flag for you, so there's no manual right-click → Open step.</p>
   </div>
   <div class="install-block" style="margin-bottom: 0;"><span class="muted"># </span>brew tap felipepkgs/ghostbar
+brew trust --tap felipepkgs/ghostbar
 brew install --cask ghostbar
 <span class="muted"># later, to update:</span>
 brew upgrade --cask ghostbar</div>
+  <p style="max-width: 460px; margin: 14px auto 0; text-align: center; font-size: 13px; color: var(--text-faint);">On Homebrew 7.0.5+, <code>brew trust</code> is required once per new third-party tap — without it, <code>brew install</code> refuses to even load the cask.</p>
 </section>
 
 <footer class="wrap">
