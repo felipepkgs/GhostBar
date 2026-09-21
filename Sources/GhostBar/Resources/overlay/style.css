@@ -289,7 +289,16 @@ body[data-theme="unibody"] #action .pill { background: linear-gradient(180deg, #
    overrides needed — they inherit Vapor's), just a different tint and a
    recolored dot. The shared dot-pulse keyframes are hardcoded to Vapor's
    green, so each material gets its own dot-pulse-* keyframes instead of
-   fighting the base animation for the box-shadow property. */
+   fighting the base animation for the box-shadow property.
+
+   The material tint lives on `body` itself (the whole panel, still
+   translucent — this is the Vapor family, native blur reads through) so
+   it isn't just the button chips that look gold/silver/carbon; .bar/.group
+   then layer a lighter version on top so the chips still read as grouped
+   elements against the panel, not a flat duplicate of the same tint. */
+body[data-theme="vaporGold"] {
+  background: linear-gradient(165deg, rgba(255, 214, 130, 0.12), rgba(120, 90, 30, 0.05) 55%, rgba(40, 30, 10, 0.10));
+}
 body[data-theme="vaporGold"] .bar {
   background: linear-gradient(180deg, rgba(255, 214, 130, 0.14), rgba(255, 200, 100, 0.04) 45%, rgba(120, 90, 30, 0.10));
   box-shadow: inset 0 0 0 1px rgba(255, 210, 130, 0.16);
@@ -312,6 +321,9 @@ body[data-theme="vaporGold"] .dot {
 body[data-theme="vaporGold"] .row-label { color: rgba(255, 224, 170, 0.5); }
 body[data-theme="vaporGold"] #action .pill { background: rgba(40, 30, 10, 0.55); box-shadow: inset 0 0 0 1px rgba(255, 210, 130, 0.22), 0 8px 20px rgba(0, 0, 0, 0.35); }
 
+body[data-theme="vaporSilver"] {
+  background: linear-gradient(165deg, rgba(230, 236, 242, 0.12), rgba(140, 150, 160, 0.04) 55%, rgba(30, 32, 36, 0.10));
+}
 body[data-theme="vaporSilver"] .bar {
   background: linear-gradient(180deg, rgba(230, 236, 242, 0.16), rgba(230, 236, 242, 0.04) 45%, rgba(140, 150, 160, 0.10));
   box-shadow: inset 0 0 0 1px rgba(230, 236, 242, 0.18);
@@ -335,20 +347,23 @@ body[data-theme="vaporSilver"] .row-label { color: rgba(230, 236, 242, 0.45); }
 body[data-theme="vaporSilver"] #action .pill { background: rgba(30, 32, 36, 0.55); box-shadow: inset 0 0 0 1px rgba(230, 236, 242, 0.22), 0 8px 20px rgba(0, 0, 0, 0.35); }
 
 /* Classic woven-carbon trick: two crossed repeating diagonal gradients,
-   kept low-opacity so it reads as a texture on the glass, not a sticker. */
-body[data-theme="vaporCarbon"] .bar {
+   kept low-opacity so it reads as a texture on the glass, not a sticker.
+   Lives on `body` so the whole panel is woven, not just the buttons;
+   .bar/.group get a plain flat tint instead of their own weave copy —
+   two overlapping weaves at different element sizes just moirés. */
+body[data-theme="vaporCarbon"] {
   background:
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0, rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 4px),
     repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0.35) 1px, transparent 1px, transparent 4px),
     rgba(10, 10, 12, 0.35);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+body[data-theme="vaporCarbon"] .bar {
+  background: rgba(10, 10, 12, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 }
 body[data-theme="vaporCarbon"] .group {
-  background:
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0, rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 4px),
-    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0.35) 1px, transparent 1px, transparent 4px),
-    rgba(10, 10, 12, 0.35);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background: rgba(10, 10, 12, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 }
 body[data-theme="vaporCarbon"] .seg.active-seg { background: rgba(200, 30, 58, 0.22); color: #fff; }
 body[data-theme="vaporCarbon"] .dot {
