@@ -14,12 +14,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var onboardingWindow: SwiftUIWindowController<OnboardingView>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        guard !isDuplicateInstanceRunning() else {
-            NSLog("GhostBar: another instance is already running — quitting this one")
-            NSApp.terminate(nil)
-            return
-        }
-
+        // Single-instance enforcement now happens earlier, in main.swift
+        // via SingleInstanceLock — before NSApplication.run() even starts,
+        // so a rejected duplicate never reaches this point at all. See
+        // SingleInstanceLock.swift for why (an atomic file lock replacing
+        // an earlier NSWorkspace-based check that had a real TOCTOU race).
         touchReader.onTouch = { [weak self] x, active in
             self?.overlay.sendTouch(x: x, active: active)
         }
@@ -224,24 +223,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ))
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
         NSApp.activate(ignoringOtherApps: true)
-    }
-
-    /// Guards against two instances registering the same global hotkey and
-    /// event monitors at once (happened during development: a `swift build`
-    /// debug run left running alongside the bundled .app).
-    /// ponytail: `swift run` has no bundle identifier, so that path falls
-    /// back to matching by process name — a false positive is only possible
-    /// against another unrelated process that happens to share the same
-    /// name, an acceptable ceiling for a dev-only code path.
-    private func isDuplicateInstanceRunning() -> Bool {
-        let myPID = ProcessInfo.processInfo.processIdentifier
-        let others = NSWorkspace.shared.runningApplications.filter { $0.processIdentifier != myPID }
-
-        if let bundleID = Bundle.main.bundleIdentifier {
-            return others.contains { $0.bundleIdentifier == bundleID }
-        }
-        let myName = ProcessInfo.processInfo.processName
-        return others.contains { $0.localizedName == myName }
     }
 
     @objc private func toggleLoginItem() {
