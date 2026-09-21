@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GhostBar — a Touch Bar you can still feel</title>
-<meta name="description" content="GhostBar mirrors a dead Touch Bar's display using the still-working digitizer underneath — live touch position, real Control Strip layout, named action toasts.">
+<title>GhostBar</title>
+<meta name="description" content="The Touch Bar, on the screen you're already looking at. Live touch position, real Control Strip layout, and action feedback — no more glancing down.">
 <link rel="icon" href="images/ghost-logo.png">
 <style>
   :root {
@@ -215,8 +215,8 @@
 
 <header class="hero">
   <img class="hero-ghost" src="images/ghost-logo.png" alt="GhostBar">
-  <h1>Your Touch Bar's display died.<br><span class="dim">The digitizer didn't.</span></h1>
-  <p class="subhead">GhostBar is a floating overlay that shows exactly where you're touching, in real time — plus your real Control Strip layout and named action toasts, read straight from macOS, not guessed.</p>
+  <h1>The Touch Bar, on the screen<br><span class="dim">you're already looking at.</span></h1>
+  <p class="subhead">GhostBar shows your Touch Bar's live touch position, real Control Strip layout, and action feedback right on your screen — so you never have to glance down to know what's under your finger.</p>
   <div class="cta-row">
     <a class="btn btn-primary" href="#install">Install with Homebrew</a>
     <a class="btn btn-ghost" href="https://github.com/felipepkgs/GhostBar">View on GitHub</a>
@@ -228,13 +228,6 @@ brew install --cask ghostbar</div>
 <div class="demo">
   <img src="https://github.com/user-attachments/assets/3cfc8b37-b367-4935-b3df-170f5f82fe97" alt="GhostBar showing the current Control Strip for the active window" width="599" height="130">
 </div>
-
-<section id="why" class="wrap">
-  <div class="why">
-    <p>My MacBook's Touch Bar OLED panel is dead — but the digitizer underneath it isn't. The display and the touch sensor are separate hardware paths that failed independently, so every tap still registers, I just can't see it happen.</p>
-    <p>GhostBar can't show the <em>actual</em> pixels your apps draw on the Touch Bar — that's architecturally out of reach on this hardware. What it gives you instead is everything <strong>independently, definitively knowable</strong>: raw touch position, named system actions, and your real Control Strip layout + active mode, read straight from macOS's own preferences.</p>
-  </div>
-</section>
 
 <section id="features" class="wrap">
   <div class="section-head">
@@ -291,6 +284,17 @@ brew install --cask ghostbar</div>
     <div class="theme-card"><img src="images/theme-vapor-gold.png" alt="Vapor Gold theme"><div class="label">Vapor — Gold</div></div>
     <div class="theme-card"><img src="images/theme-vapor-silver.png" alt="Vapor Silver theme"><div class="label">Vapor — Silver</div></div>
     <div class="theme-card"><img src="images/theme-vapor-carbon.png" alt="Vapor Carbon Fiber theme"><div class="label">Vapor — Carbon Fiber</div></div>
+  </div>
+</section>
+
+<section id="why-built" class="wrap">
+  <div class="section-head">
+    <span class="eyebrow">Backstory</span>
+    <h2>Why I built this</h2>
+  </div>
+  <div class="why">
+    <p>My MacBook's Touch Bar OLED panel is dead — but the digitizer underneath it isn't. The display and the touch sensor are separate hardware paths that failed independently, so every tap still registers, I just can't see it happen.</p>
+    <p>I built GhostBar to get that feedback back onto my screen — and realized the same overlay is worth having even with a working display, since either way you're looking away from your screen to see what's on the bar.</p>
   </div>
 </section>
 
