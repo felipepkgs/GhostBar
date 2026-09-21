@@ -47,6 +47,30 @@ instead of a glowing dot.
 
 ![Unibody theme](images/theme-unibody.png)
 
+## Special Themes
+
+Material finishes on Vapor's own glass shape — same silhouette and blur,
+different tint and a recolored dot — rather than new looks of their own.
+
+### Vapor — Gold
+
+Warm brass-tinted glass, amber glow.
+
+![Vapor Gold theme](images/theme-vapor-gold.png)
+
+### Vapor — Silver
+
+Cool platinum-tinted glass, white-chrome glow.
+
+![Vapor Silver theme](images/theme-vapor-silver.png)
+
+### Vapor — Carbon Fiber
+
+A woven-carbon texture (two crossed diagonal gradients) on the glass, with
+a red accent.
+
+![Vapor Carbon Fiber theme](images/theme-vapor-carbon.png)
+
 ---
 
 These started as a five-way design exploration comparing glassmorphism and
