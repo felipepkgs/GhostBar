@@ -5,20 +5,16 @@
 
 > It shows the current bar for the active window
 
-My Touch Bar's OLED panel is dead — but the digitizer underneath it isn't. The
-display and the touch sensor are separate hardware paths that failed
-independently, so every tap still registers, I just can't see it happen. This
-app is a floating on-screen stand-in: it shows where you're touching in real
-time, and flashes up the name of anything you press that maps to a system
-action (brightness, volume, media keys).
+My Touch Bar's OLED panel is dead, but the digitizer underneath it still
+works — every tap registers, I just can't see it. This app is a floating
+on-screen stand-in: it shows where you're touching in real time, and
+flashes the name of anything you press that maps to a system action
+(brightness, volume, media keys).
 
-It can't show the *actual* pixels your apps draw on the Touch Bar — that's
-architecturally out of reach on this hardware, see
-[Investigated dead ends](docs/dead-ends.md). What it gives you instead is
-everything independently, definitively knowable: raw touch position, named
-system actions, and — read straight from macOS's own preferences, not
-inferred — which mode (Function Keys or Control Strip) is actually active
-right now and what your real Control Strip layout is.
+It can't show the *actual* pixels your apps draw on the Touch Bar — see
+[Investigated dead ends](docs/dead-ends.md) for why. What it gives you
+instead: raw touch position, named system actions, and your real Control
+Strip layout + active mode, read straight from macOS's own preferences.
 
 ## What it does
 
@@ -27,10 +23,8 @@ right now and what your real Control Strip layout is.
   glass panel (a genuine `NSVisualEffectView`, not a painted rectangle).
 - **Touch feedback on the strip itself** — the segment under the dot lights
   up as it crosses.
-- **Asserts your real mode — Function Keys or Control Strip — it doesn't
-  guess.** Reads macOS's own preference domains directly, including your
-  actual customized Control Strip layout, and refreshes live as you switch
-  apps.
+- **Asserts your real mode** (Function Keys or Control Strip) from macOS's
+  own preferences — not a guess — and refreshes live as you switch apps.
 - **Follows your cursor across monitors**, checked on every touch, while
   still honoring a manually dragged position on that screen.
 - **Named action toasts** for brightness/volume/mute/media/keyboard-
@@ -63,7 +57,7 @@ For building from source, dev iteration, and architecture details, see
 ## Docs
 
 - [Architecture](docs/architecture.md) — file-by-file breakdown, building from source
-- [Themes](docs/themes.md) — the five visual directions, with screenshots
+- [Themes](docs/themes.md) — the visual themes, with screenshots
 - [Investigated dead ends](docs/dead-ends.md) — Touch Bar content mirroring, Now Playing info
 - [Releasing](docs/releasing.md) — how the auto-release + Homebrew tap pipeline works
 
