@@ -1,15 +1,12 @@
 # GhostBar
 
-## Context-aware GhostBar display
 <img width="599" height="130" alt="Gravação 2026-09-19 at 00 14 19" src="https://github.com/user-attachments/assets/3cfc8b37-b367-4935-b3df-170f5f82fe97" />
 
-> It shows the current bar for the active window
+> The Touch Bar, on the screen you're already looking at.
 
-My Touch Bar's OLED panel is dead, but the digitizer underneath it still
-works — every tap registers, I just can't see it. This app is a floating
-on-screen stand-in: it shows where you're touching in real time, and
-flashes the name of anything you press that maps to a system action
-(brightness, volume, media keys).
+GhostBar shows your Touch Bar's live touch position, real Control Strip
+layout, and action feedback right on your screen — so you never have to
+glance down to know what's under your finger.
 
 It can't show the *actual* pixels your apps draw on the Touch Bar — see
 [Investigated dead ends](docs/dead-ends.md) for why. What it gives you
@@ -40,6 +37,16 @@ Strip layout + active mode, read straight from macOS's own preferences.
   no Sparkle, no self-replacing binary.
 - **First-launch welcome window** and **Launch at Login**.
 - **Lives in the menu bar** — no Dock icon, no window chrome.
+
+## Why I built this
+
+My MacBook's Touch Bar OLED panel is dead, but the digitizer underneath it
+isn't. The display and the touch sensor are separate hardware paths that
+failed independently, so every tap still registers, I just can't see it
+happen. I built GhostBar to get that feedback back onto my screen — and
+realized the same overlay is worth having even with a working display,
+since either way you're looking away from your screen to see what's on
+the bar.
 
 ## Install
 
