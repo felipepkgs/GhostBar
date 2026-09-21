@@ -1,5 +1,7 @@
 import AppKit
 
+SingleInstanceLock.acquireOrExit()
+
 let delegate = AppDelegate()
 let app = NSApplication.shared
 app.delegate = delegate
