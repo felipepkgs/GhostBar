@@ -19,13 +19,13 @@ on:
 permissions:
   contents: write
 
-# Two merges to master seconds apart (common when merging several small PRs
-# in a row) used to race: both runs' "Determine version" steps would check
-# out master, bump+commit+push in parallel, and the second push would be
-# rejected as non-fast-forward, failing that whole run before it ever built
-# or released anything. Queuing runs instead of letting them race means the
-# second run starts only after the first finishes, so it checks out a
-# master that already has the first run's bump commit — no collision.
+# Queues workflow runs instead of letting two race each other's version-bump
+# push. Doesn't cover every case, though: a run's own push can still get
+# rejected by a push that happens outside the Actions system entirely (e.g.
+# several PRs merged back to back interactively) while that run is already
+# mid-flight — checkout already happened, so queuing wouldn't have helped.
+# The "Determine version" step's retry loop is what actually closes that
+# gap; this just cuts down how often it needs to.
 concurrency:
   group: release
   cancel-in-progress: false
@@ -55,7 +55,18 @@ jobs:
             # [skip ci] is what breaks the loop — this commit re-touches
             # Packaging/**, which matches this workflow's own paths filter.
             git commit -m "chore: bump version to $NEW [skip ci]"
-            git push
+            for attempt in 1 2 3 4 5; do
+              if git push; then
+                break
+              fi
+              if [ "$attempt" -eq 5 ]; then
+                echo "::error::git push failed after 5 attempts — master kept moving"
+                exit 1
+              fi
+              echo "push rejected (attempt $attempt/5) — rebasing onto latest master and retrying"
+              git fetch origin master
+              git rebase origin/master
+            done
             echo "version=$NEW" >> "$GITHUB_OUTPUT"
           else
             echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
