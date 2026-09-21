@@ -8,6 +8,15 @@ final class OverlayPanelController: NSObject {
     private var lastSend: TimeInterval = 0
     private let minInterval: TimeInterval = 1.0 / 60.0 // caps evaluateJavaScript rate
     private var wasTouchActive = false
+    // Touch position (sendTouch) and recognized system actions (sendAction)
+    // are two independent, unordered signals off two different underlying
+    // event streams (the digitizer vs NSEvent.systemDefined) — a volume
+    // press's action callback isn't guaranteed to land before or after its
+    // touch-down. Tracking "when did a with-its-own-sound action last fire"
+    // and checking it from a short delay on touch-down (below) handles
+    // either ordering, instead of assuming one.
+    private var lastActionWithOwnSoundTime: TimeInterval = 0
+    private static let actionsWithOwnSound: Set<String> = ["Volume Up", "Volume Down", "Mute"]
 
     // Hotkey toggle "pins" the panel open, overriding the idle auto-hide below.
     // private(set), not fully private — AppDelegate's menu checkmark needs
@@ -96,6 +105,18 @@ final class OverlayPanelController: NSObject {
             self, selector: #selector(frontmostAppChanged),
             name: NSWorkspace.didActivateApplicationNotification, object: nil
         )
+        // Preferences' sliders/theme picker write straight to UserDefaults
+        // via @AppStorage — without this, a change while Preview is open
+        // only took effect on the next click of the Preview button itself,
+        // since applyPanelSize()/the theme push otherwise only ran from
+        // preview()/positionPanel(). Guarded to isPinned in the handler, so
+        // this is a no-op the rest of the time (including for unrelated
+        // defaults changes, e.g. the hotkey recorder — cheap enough not to
+        // bother filtering by key).
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(defaultsChanged),
+            name: UserDefaults.didChangeNotification, object: nil
+        )
 
         loadOverlay()
         positionPanel()
@@ -127,6 +148,17 @@ final class OverlayPanelController: NSObject {
     @objc private func frontmostAppChanged() {
         guard panel.isVisible else { return }
         refreshLiveLayout()
+    }
+
+    /// See the observer registration comment. applyPanelSize() covers
+    /// panel-size + the theme's native chrome (corner radius/border);
+    /// opacity and the theme's CSS/JS side aren't part of that, so they're
+    /// re-applied directly here too.
+    @objc private func defaultsChanged() {
+        guard isPinned else { return }
+        applyPanelSize()
+        panel.alphaValue = CGFloat(Settings.panelOpacity)
+        webView.evaluateJavaScript("window.setTheme && window.setTheme(\"\(Settings.panelTheme.rawValue)\");")
     }
 
     private func loadOverlay() {
@@ -309,9 +341,17 @@ final class OverlayPanelController: NSObject {
             revealPanel(hideAfter: idleHideDelay)
             // Edge-triggered (fires once per touch-down, not every tick a
             // finger stays down) — Settings.playTouchSound is off by
-            // default, see its own comment for why.
+            // default, see its own comment for why. A short delay before
+            // actually playing, re-checking lastActionWithOwnSoundTime at
+            // fire time, covers a volume action landing either just before
+            // or during this window (see that property's comment).
             if !wasTouchActive && Settings.playTouchSound {
-                NSSound(named: "Tink")?.play()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
+                    guard let self else { return }
+                    let sinceOwnSoundAction = ProcessInfo.processInfo.systemUptime - self.lastActionWithOwnSoundTime
+                    guard sinceOwnSoundAction > 0.3 else { return }
+                    NSSound(named: "Tink")?.play()
+                }
             }
         }
         wasTouchActive = active
@@ -327,6 +367,9 @@ final class OverlayPanelController: NSObject {
     /// as a text label, held a bit longer than a plain touch since it's meant
     /// to be read, not just glanced at.
     func sendAction(_ label: String) {
+        if Self.actionsWithOwnSound.contains(label) {
+            lastActionWithOwnSoundTime = ProcessInfo.processInfo.systemUptime
+        }
         repositionIfScreenChanged()
         revealPanel(hideAfter: actionHideDelay)
         let escaped = label.replacingOccurrences(of: "\"", with: "\\\"")
