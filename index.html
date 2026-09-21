@@ -17,12 +17,15 @@
     --text-dim: rgba(255,255,255,0.58);
     --text-faint: rgba(255,255,255,0.38);
     --accent: #30d158;
+    --accent-2: #22c1c3;
     --accent-glow: rgba(48,209,88,0.35);
+    --accent-gradient: linear-gradient(135deg, var(--accent), var(--accent-2));
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; background: var(--bg-bottom); }
   body {
     margin: 0;
+    overflow-x: hidden;
     background: radial-gradient(ellipse 120% 60% at 50% -10%, #232326 0%, var(--bg-top) 32%, var(--bg-bottom) 100%);
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
@@ -31,6 +34,9 @@
   }
   a { color: inherit; }
   .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---- top accent bar ---- */
+  .top-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--accent-gradient); z-index: 50; }
 
   /* ---- nav ---- */
   nav.wrap {
@@ -102,9 +108,20 @@
 
   /* ---- demo ---- */
   .demo {
+    position: relative;
     display: flex;
     justify-content: center;
     padding: 0 24px 88px;
+  }
+  .demo::before {
+    content: "";
+    position: absolute;
+    left: 50%; top: 50%;
+    width: min(760px, 90%); height: 260px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse, rgba(48,209,88,0.16), rgba(34,193,195,0.08) 55%, transparent 75%);
+    filter: blur(30px);
+    z-index: -1;
   }
   .demo img {
     max-width: 100%;
@@ -114,7 +131,8 @@
   }
 
   /* ---- sections ---- */
-  section { padding: 64px 0; }
+  section { padding: 64px 0; position: relative; }
+  .section-wash { position: absolute; top: 0; bottom: 0; left: 50%; width: 100vw; transform: translateX(-50%); z-index: -1; pointer-events: none; }
   .section-head { text-align: center; max-width: 560px; margin: 0 auto 44px; }
   .eyebrow {
     display: block;
@@ -122,7 +140,10 @@
     font-weight: 650;
     letter-spacing: 0.10em;
     text-transform: uppercase;
-    color: var(--text-faint);
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
     margin-bottom: 10px;
   }
   h2 { font-size: clamp(24px, 3.4vw, 32px); font-weight: 620; letter-spacing: -0.02em; margin: 0 0 12px; text-wrap: balance; }
@@ -140,29 +161,63 @@
     background: var(--glass);
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(20px);
+    transition: transform .18s ease, border-color .18s ease, background .18s ease;
   }
-  .feature .icon { font-size: 22px; margin-bottom: 12px; display: block; }
+  .feature:hover {
+    transform: translateY(-2px);
+    border-color: rgba(48,209,88,0.28);
+    background: var(--glass-strong);
+  }
+  .icon-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, rgba(48,209,88,0.22), rgba(34,193,195,0.12));
+    border: 1px solid rgba(48,209,88,0.22);
+  }
+  .icon-badge img { width: 20px; height: 20px; display: block; }
   .feature h3 { font-size: 15px; font-weight: 620; margin: 0 0 6px; letter-spacing: -0.01em; }
   .feature p { font-size: 13.5px; color: var(--text-dim); margin: 0; line-height: 1.55; }
 
   /* ---- themes ---- */
   .theme-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
   .theme-card {
-    border-radius: 14px;
+    position: relative;
+    width: 100%;
+    max-width: 692px;
+    margin: 0 auto;
+    border-radius: 16px;
     overflow: hidden;
-    background: rgba(0,0,0,0.3);
+    background: #000;
     border: 1px solid var(--glass-border);
+    box-shadow: 0 12px 34px rgba(0,0,0,0.35);
   }
   .theme-card img { display: block; width: 100%; height: auto; }
-  .theme-card .label {
-    padding: 10px 14px 14px;
+  .theme-card::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: 0; height: 65%;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.7));
+    pointer-events: none;
+  }
+  .theme-label {
+    position: absolute;
+    left: 14px; bottom: 12px;
+    z-index: 1;
+    padding: 6px 12px;
+    border-radius: 8px;
     font-size: 13px;
-    font-weight: 560;
-    color: var(--text-dim);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    background: rgba(12,12,14,0.6);
+    border: 1px solid rgba(255,255,255,0.14);
+    backdrop-filter: blur(12px);
   }
 
   /* ---- why ---- */
@@ -181,27 +236,32 @@
 
   /* ---- footer ---- */
   footer {
-    border-top: 1px solid var(--glass-border);
-    padding: 32px 0 44px;
+    position: relative;
+    border-top: 1px solid transparent;
+    background-image: linear-gradient(var(--bg-bottom), var(--bg-bottom)), linear-gradient(90deg, transparent, var(--glass-border) 20%, var(--glass-border) 80%, transparent);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    padding: 40px 0 52px;
     text-align: center;
-    color: var(--text-faint);
-    font-size: 13px;
+    color: var(--text-dim);
+    font-size: 13.5px;
   }
-  footer a { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: rgba(255,255,255,0.2); }
-  footer .foot-links { margin-top: 10px; display: flex; gap: 18px; justify-content: center; }
+  footer a { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: rgba(255,255,255,0.25); transition: color .15s ease; }
+  footer a:hover { color: var(--accent); }
+  footer .foot-links { margin-top: 14px; display: flex; gap: 22px; justify-content: center; font-size: 13px; color: var(--text-faint); }
 
   @media (max-width: 720px) {
     .features { grid-template-columns: 1fr 1fr; }
-    .theme-grid { grid-template-columns: 1fr 1fr; }
     .nav-links { display: none; }
   }
   @media (max-width: 460px) {
     .features { grid-template-columns: 1fr; }
-    .theme-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
+
+<div class="top-bar"></div>
 
 <nav class="wrap">
   <div class="brand"><img src="images/ghost-logo.png" alt=""> GhostBar</div>
@@ -230,6 +290,7 @@ brew install --cask ghostbar</div>
 </div>
 
 <section id="features" class="wrap">
+  <div class="section-wash" style="background: radial-gradient(ellipse 70% 100% at 50% 0%, rgba(48,209,88,0.045), transparent 70%);"></div>
   <div class="section-head">
     <span class="eyebrow">What it does</span>
     <h2>A real substitute, not a guess</h2>
@@ -237,32 +298,32 @@ brew install --cask ghostbar</div>
   </div>
   <div class="features">
     <div class="feature">
-      <span class="icon">👆</span>
+      <span class="icon-badge"><img src="images/icons/touch.png" alt=""></span>
       <h3>Live touch dot</h3>
       <p>Tracked via the same low-level digitizer API trackpad-visualizer tools use, rendered as a glowing dot on real macOS frosted glass.</p>
     </div>
     <div class="feature">
-      <span class="icon">🎛️</span>
+      <span class="icon-badge"><img src="images/icons/control-strip.png" alt=""></span>
       <h3>Real Control Strip mirroring</h3>
       <p>Reads your actual customized layout and current mode — Function Keys or Control Strip — straight from macOS's own preferences.</p>
     </div>
     <div class="feature">
-      <span class="icon">🔊</span>
+      <span class="icon-badge"><img src="images/icons/volume.png" alt=""></span>
       <h3>Named action toasts</h3>
       <p>Brightness, volume, mute, media, keyboard illumination — shown as a clear label the moment you press it.</p>
     </div>
     <div class="feature">
-      <span class="icon">🎨</span>
+      <span class="icon-badge"><img src="images/icons/palette.png" alt=""></span>
       <h3>Eight selectable themes</h3>
       <p>From restrained glass to Braun-flat to brushed-metal, plus three material finishes: Gold, Silver, Carbon Fiber.</p>
     </div>
     <div class="feature">
-      <span class="icon">⌨️</span>
+      <span class="icon-badge"><img src="images/icons/keyboard.png" alt=""></span>
       <h3>Global hotkey</h3>
       <p>Pin the panel open on demand, fully rebindable — no need to touch the physical bar to check your layout.</p>
     </div>
     <div class="feature">
-      <span class="icon">🍺</span>
+      <span class="icon-badge"><img src="images/icons/beer.png" alt=""></span>
       <h3>Menu bar utility</h3>
       <p>No Dock icon, single-instance guarded, auto-checks for updates, installs and upgrades cleanly via Homebrew.</p>
     </div>
@@ -270,20 +331,21 @@ brew install --cask ghostbar</div>
 </section>
 
 <section id="themes" class="wrap">
+  <div class="section-wash" style="background: radial-gradient(ellipse 90% 100% at 50% 20%, rgba(34,193,195,0.05), transparent 70%);"></div>
   <div class="section-head">
     <span class="eyebrow">Themes</span>
     <h2>Eight looks, one panel</h2>
     <p>Pick one in Preferences — applies live, no relaunch needed.</p>
   </div>
   <div class="theme-grid">
-    <div class="theme-card"><img src="images/theme-vapor.png" alt="Vapor theme"><div class="label">Vapor</div></div>
-    <div class="theme-card"><img src="images/theme-meniscus.png" alt="Meniscus theme"><div class="label">Meniscus</div></div>
-    <div class="theme-card"><img src="images/theme-ulm.png" alt="Ulm theme"><div class="label">Ulm</div></div>
-    <div class="theme-card"><img src="images/theme-instrument.png" alt="Instrument theme"><div class="label">Instrument</div></div>
-    <div class="theme-card"><img src="images/theme-unibody.png" alt="Unibody theme"><div class="label">Unibody</div></div>
-    <div class="theme-card"><img src="images/theme-vapor-gold.png" alt="Vapor Gold theme"><div class="label">Vapor — Gold</div></div>
-    <div class="theme-card"><img src="images/theme-vapor-silver.png" alt="Vapor Silver theme"><div class="label">Vapor — Silver</div></div>
-    <div class="theme-card"><img src="images/theme-vapor-carbon.png" alt="Vapor Carbon Fiber theme"><div class="label">Vapor — Carbon Fiber</div></div>
+    <div class="theme-card"><img src="images/theme-vapor.png" alt="Vapor theme"><span class="theme-label">Vapor</span></div>
+    <div class="theme-card"><img src="images/theme-meniscus.png" alt="Meniscus theme"><span class="theme-label">Meniscus</span></div>
+    <div class="theme-card"><img src="images/theme-ulm.png" alt="Ulm theme"><span class="theme-label">Ulm</span></div>
+    <div class="theme-card"><img src="images/theme-instrument.png" alt="Instrument theme"><span class="theme-label">Instrument</span></div>
+    <div class="theme-card"><img src="images/theme-unibody.png" alt="Unibody theme"><span class="theme-label">Unibody</span></div>
+    <div class="theme-card"><img src="images/theme-vapor-gold.png" alt="Vapor Gold theme"><span class="theme-label">Vapor — Gold</span></div>
+    <div class="theme-card"><img src="images/theme-vapor-silver.png" alt="Vapor Silver theme"><span class="theme-label">Vapor — Silver</span></div>
+    <div class="theme-card"><img src="images/theme-vapor-carbon.png" alt="Vapor Carbon Fiber theme"><span class="theme-label">Vapor — Carbon Fiber</span></div>
   </div>
 </section>
 
@@ -299,6 +361,7 @@ brew install --cask ghostbar</div>
 </section>
 
 <section id="install" class="wrap">
+  <div class="section-wash" style="background: radial-gradient(ellipse 70% 100% at 50% 50%, rgba(48,209,88,0.05), transparent 70%);"></div>
   <div class="section-head">
     <span class="eyebrow">Install</span>
     <h2>Up and running in one line</h2>
@@ -311,7 +374,7 @@ brew upgrade --cask ghostbar</div>
 </section>
 
 <footer class="wrap">
-  <div>Control Strip icons, the menu bar glyph, and the app icon are by <a href="https://icons8.com">Icons8</a>, used under their free license.</div>
+  <div>Control Strip icons, the menu bar glyph, the app icon, and the feature icons above are all by <a href="https://icons8.com">Icons8</a>, used under their free license.</div>
   <div class="foot-links">
     <a href="https://github.com/felipepkgs/GhostBar">GitHub</a>
     <a href="https://github.com/felipepkgs/GhostBar/releases">Releases</a>
