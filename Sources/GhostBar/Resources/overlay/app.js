@@ -43,6 +43,12 @@ window.setMode = function (mode) {
   controlRow.classList.toggle("hidden", mode !== "controlStrip");
 };
 
+// Preferences' "Theme" picker — see style.css's body[data-theme="..."]
+// blocks for what each one actually changes.
+window.setTheme = function (theme) {
+  document.body.dataset.theme = theme;
+};
+
 window.onTouchPosition = function (data) {
   bars.forEach((bar) => {
     const dot = bar.querySelector(".dot");

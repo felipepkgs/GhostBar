@@ -11,6 +11,7 @@ enum SettingsKey {
     static let lastUpdateCheck = "GhostBar.lastUpdateCheck"
     static let hotkeyKeyCode = "GhostBar.hotkeyKeyCode"
     static let hotkeyModifiers = "GhostBar.hotkeyModifiers"
+    static let panelTheme = "GhostBar.panelTheme"
 }
 
 /// Read-side for OverlayPanelController. Defaults are inlined here rather
@@ -54,5 +55,9 @@ enum Settings {
     static func setHotkey(keyCode: UInt32, modifiers: UInt32) {
         UserDefaults.standard.set(Int(keyCode), forKey: SettingsKey.hotkeyKeyCode)
         UserDefaults.standard.set(Int(modifiers), forKey: SettingsKey.hotkeyModifiers)
+    }
+
+    static var panelTheme: PanelTheme {
+        PanelTheme(rawValue: UserDefaults.standard.string(forKey: SettingsKey.panelTheme) ?? "") ?? .vapor
     }
 }

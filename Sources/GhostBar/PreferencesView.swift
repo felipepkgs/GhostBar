@@ -8,6 +8,7 @@ struct PreferencesView: View {
     @AppStorage(SettingsKey.actionHideDelay) private var actionHideDelay = 2.5
     @AppStorage(SettingsKey.panelScale) private var panelScale = 1.0
     @AppStorage(SettingsKey.panelOpacity) private var panelOpacity = 1.0
+    @AppStorage(SettingsKey.panelTheme) private var panelThemeRaw = PanelTheme.vapor.rawValue
 
     // See OnboardingView's comment: @State's macro plugin isn't resolvable
     // in this CommandLineTools-only SPM build, so this binds straight to
@@ -28,6 +29,11 @@ struct PreferencesView: View {
             }
 
             Section("Appearance") {
+                Picker("Theme", selection: $panelThemeRaw) {
+                    ForEach(PanelTheme.allCases) { theme in
+                        Text(theme.displayName).tag(theme.rawValue)
+                    }
+                }
                 LabeledSlider(label: "Panel size", value: $panelScale, range: 0.75...1.5) {
                     String(format: "%.0f%%", $0 * 100)
                 }

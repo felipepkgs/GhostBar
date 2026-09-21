@@ -184,9 +184,15 @@ final class OverlayPanelController: NSObject {
 
         // Native AppKit layer properties, not page content — pageZoom
         // doesn't touch these, so they'd stay visually fixed-size while
-        // everything else scales unless set here too.
-        glass.layer?.cornerRadius = 22 * scale
+        // everything else scales unless set here too. Corner radius and
+        // border color also come from the current Preferences theme (see
+        // PanelTheme) — the WebView's own CSS can round its inner elements,
+        // but this outer clip is what actually defines the panel's
+        // silhouette, and the page can't reach it.
+        let theme = Settings.panelTheme
+        glass.layer?.cornerRadius = theme.cornerRadius * scale
         glass.layer?.borderWidth = 1 * scale
+        glass.layer?.borderColor = theme.borderColor.cgColor
 
         let newSize = NSSize(width: Self.baseSize.width * scale, height: Self.baseSize.height * scale)
         guard panel.frame.size != newSize else { return }
@@ -352,6 +358,8 @@ final class OverlayPanelController: NSObject {
         }
         let modeLiteral = mode == .functionKeys ? "functionKeys" : "controlStrip"
         webView.evaluateJavaScript("window.setMode && window.setMode(\"\(modeLiteral)\");")
+
+        webView.evaluateJavaScript("window.setTheme && window.setTheme(\"\(Settings.panelTheme.rawValue)\");")
     }
 
     private struct JSONIcon: Encodable {

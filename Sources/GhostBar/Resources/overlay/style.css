@@ -191,3 +191,95 @@ html, body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   white-space: nowrap;
 }
+
+/* ==========================================================================
+   Themes — set by Preferences' "Theme" picker, applied via setTheme() as
+   body[data-theme]. Everything above this point (no [data-theme] qualifier)
+   IS the "Vapor" look — the design pitch's restrained-glass direction is
+   close enough to what GhostBar already shipped that it stays the
+   unqualified default rather than a redundant fourth copy of the same
+   rules. The four blocks below are overrides on top of it, not full
+   restatements — each only touches what actually differs.
+
+   No custom web fonts: the "GhostBar, Five Ways" pitch used five different
+   Google Fonts for real typographic distinction, but loading a web font
+   into this overlay would put a network fetch on the critical path of
+   "appear the instant you touch the Touch Bar" — see PanelTheme.swift's
+   header comment. Differentiation here comes from weight/case/spacing on
+   -apple-system instead.
+   ========================================================================== */
+
+/* ---- Meniscus: Vapor turned all the way up ---- */
+body[data-theme="meniscus"] .bar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.05) 42%, rgba(255, 255, 255, 0.09));
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 0 0 1px rgba(140, 200, 255, 0.12);
+  border-radius: 20px;
+}
+body[data-theme="meniscus"] .group {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.11);
+  border-radius: 14px;
+}
+body[data-theme="meniscus"] .seg { color: rgba(255, 255, 255, 0.86); }
+body[data-theme="meniscus"] .seg.active-seg { background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+body[data-theme="meniscus"] .dot {
+  width: 16px; height: 16px;
+  box-shadow: 0 0 0 5px rgba(48, 209, 88, 0.16), 0 0 22px 5px rgba(48, 209, 88, 0.85), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+}
+body[data-theme="meniscus"] .row-label { color: rgba(255, 255, 255, 0.5); }
+
+/* ---- Ulm: Rams/Braun — flat matte grey, one signal-red indicator ---- */
+body[data-theme="ulm"] { background: #ECE9E2; }
+body[data-theme="ulm"] .bar {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 3px;
+}
+body[data-theme="ulm"] .group { background: transparent; box-shadow: none; border-radius: 0; }
+body[data-theme="ulm"] .seg { color: #1C1B18; border-right-color: rgba(28, 27, 24, 0.16); }
+body[data-theme="ulm"] .group .seg { border-right-color: rgba(28, 27, 24, 0.16); }
+body[data-theme="ulm"] .seg.active-seg { background: rgba(28, 27, 24, 0.08); color: #1C1B18; }
+body[data-theme="ulm"] .icon-img { filter: invert(1); opacity: 0.85; }
+body[data-theme="ulm"] .seg.active-seg .icon-img { filter: invert(1) sepia(1) saturate(6) hue-rotate(-30deg); opacity: 1; }
+body[data-theme="ulm"] .dot {
+  width: 8px; height: 8px;
+  background: #C6401E;
+  box-shadow: 0 0 0 3px #ECE9E2, 0 0 0 4px rgba(28, 27, 24, 0.3);
+  animation: none;
+}
+body[data-theme="ulm"] .row-label { color: rgba(28, 27, 24, 0.45); font-family: ui-monospace, "SF Mono", monospace; }
+body[data-theme="ulm"] #action .pill { background: #ECE9E2; box-shadow: inset 0 0 0 1px rgba(28, 27, 24, 0.14); }
+body[data-theme="ulm"] #action .label { color: #1C1B18; text-shadow: none; }
+
+/* ---- Instrument: quiet and systematic — precise borders, indigo state ---- */
+body[data-theme="instrument"] { background: #F5F6F8; }
+body[data-theme="instrument"] .bar { background: transparent; box-shadow: none; border-radius: 10px; }
+body[data-theme="instrument"] .group { background: #FFFFFF; box-shadow: 0 0 0 1px rgba(20, 22, 27, 0.1); border-radius: 7px; }
+body[data-theme="instrument"] .seg { color: #40434C; border-right-color: rgba(20, 22, 27, 0.08); }
+body[data-theme="instrument"] .group .seg { border-right-color: rgba(20, 22, 27, 0.08); }
+body[data-theme="instrument"] .seg.active-seg { background: #4C5FE0; color: #fff; }
+body[data-theme="instrument"] .icon-img { filter: invert(1) brightness(0.4); opacity: 0.85; }
+body[data-theme="instrument"] .seg.active-seg .icon-img { filter: none; opacity: 1; }
+body[data-theme="instrument"] .dot {
+  width: 7px; height: 7px;
+  background: #4C5FE0;
+  box-shadow: 0 0 0 3px #F5F6F8;
+  animation: none;
+}
+body[data-theme="instrument"] .row-label { color: rgba(20, 22, 27, 0.4); }
+body[data-theme="instrument"] #action .pill { background: #fff; box-shadow: 0 0 0 1px rgba(20, 22, 27, 0.1), 0 8px 20px rgba(0, 0, 0, 0.12); }
+body[data-theme="instrument"] #action .label { color: #14161B; text-shadow: none; }
+
+/* ---- Unibody: reads as an extension of the machine, not an app over it ---- */
+body[data-theme="unibody"] { background: linear-gradient(180deg, #E3E3E5 0%, #1D1D1F 7%, #1D1D1F 93%, #0E0E0F 100%); }
+body[data-theme="unibody"] .bar { background: transparent; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05); border-radius: 14px; }
+body[data-theme="unibody"] .group { background: rgba(255, 255, 255, 0.03); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05); border-radius: 9px; }
+body[data-theme="unibody"] .seg { color: rgba(235, 235, 240, 0.62); }
+body[data-theme="unibody"] .seg.active-seg { background: rgba(255, 255, 255, 0.1); color: #EBEBF0; }
+body[data-theme="unibody"] .dot { width: 6px; height: 6px; box-shadow: 0 0 4px 1px rgba(48, 209, 88, 0.9); }
+body[data-theme="unibody"] .row-label { color: rgba(255, 255, 255, 0.32); }
+body[data-theme="unibody"] #action .pill { background: linear-gradient(180deg, #232326, #1A1A1C); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07); }
