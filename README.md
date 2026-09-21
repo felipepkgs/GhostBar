@@ -54,11 +54,15 @@ the bar.
 
 ```sh
 brew tap felipepkgs/ghostbar
+brew trust --tap felipepkgs/ghostbar
 brew install --cask ghostbar
 ```
 
 Ad-hoc signed, not Developer-ID notarized — the cask clears the Gatekeeper
 quarantine flag for you, so no manual right-click → Open step is needed.
+
+On Homebrew 7.0.5+, `brew trust` is required once per new third-party tap —
+without it, `brew install` refuses to even load the cask.
 
 For building from source, dev iteration, and architecture details, see
 [docs/architecture.md](docs/architecture.md).
