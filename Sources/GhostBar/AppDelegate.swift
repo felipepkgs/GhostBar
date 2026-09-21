@@ -63,7 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Bundle.image(forResource:) only searches the bundle's top-level
         // Resources/, not subdirectories — needs the explicit lookup, same
         // as loadOverlay()'s subdirectory: "overlay" below.
-        if let url = Bundle.module.url(forResource: "ghost-icon", withExtension: "png", subdirectory: "statusbar"),
+        if let url = GhostBarResources.url(forResource: "ghost-icon", withExtension: "png", subdirectory: "statusbar"),
            let icon = NSImage(contentsOf: url) {
             icon.isTemplate = true
             icon.size = NSSize(width: 18, height: 18)
