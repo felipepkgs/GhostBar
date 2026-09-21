@@ -80,3 +80,7 @@ Control Strip icons (`Resources/overlay/icons/`), the menu bar glyph
 (`Resources/statusbar/`), and the app icon (`Scripts/assets/ghost-source.png`,
 composited into `AppIcon.icns`) are by [Icons8](https://icons8.com), used
 under their free license.
+
+## License
+
+[MIT](LICENSE)
